@@ -1,13 +1,12 @@
-# Local development (`npm run dev`) works with these left blank. For a deployed Worker, the same two
-# names can be set with `wrangler secret put <NAME>` or in the Cloudflare dashboard.
+# Local development (`npm run dev`) works with no secrets at all. To try the optional ones, copy this file
+# to .dev.vars (git-ignored) and uncomment what you want. For a deployed Worker, set them with
+# `wrangler secret put <NAME>` or in the Cloudflare dashboard instead.
 
-# Optional. Leave this blank. Without it, the first admin can be created by whoever opens the app first.
-# If you fill it in, creating the first admin needs this key.
-SETUP_KEY=
+# Optional. Without it, the first admin can be created by whoever opens the app first. With it, setup needs this key.
+# SETUP_KEY=choose-a-one-time-password
 
-# Optional. Leave this blank. Without it, Wrangla generates a random signing key and keeps it in the database.
-# If you fill it in, that value is used to sign logins instead.
-SESSION_SECRET=
+# Optional. Without it, Wrangla generates a random signing key and keeps it in the database.
+# SESSION_SECRET=a-long-random-string
 
 # Optional. Setting this turns on emailed two-factor login codes (see README).
 # RESEND_API_KEY=re_xxxxxxxxxxxx
