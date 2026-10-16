@@ -1,0 +1,2060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wrangla</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<style>
+  :root {
+    --bg: #F2F1EC;
+    --surface: #FFFFFF;
+    --ink: #1F2A24;
+    --main: #1F2A24;              /* sidebar and primary buttons; set from Settings */
+    --on-main: #EDEBE3;           /* text on the main colour, chosen for contrast */
+    --on-main-soft: #C9C6B8;
+    --on-main-faint: #A8A493;
+    --on-main-line: #4A5850;
+    --on-main-active: rgba(255,255,255,0.12);
+    --ink-soft: #55594F;
+    --muted: #8A8676;
+    --border: #DAD5C8;
+    --office: #3B6E71;
+    --office-bg: #E7EFEE;
+    --site: #C4732C;
+    --site-bg: #F7E9DA;
+    --done: #4C7A4C;
+    --done-bg: #E6EDE3;
+    --danger: #B24A3D;
+    --radius: 8px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 14px;
+  }
+  button {
+    font-family: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink);
+    padding: 8px 14px;
+  }
+  button.primary {
+    background: var(--main);
+    color: var(--on-main);
+    border-color: var(--main);
+  }
+  button.danger { color: var(--danger); border-color: var(--danger); background: transparent; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  input, select, textarea {
+    font-family: inherit;
+    font-size: 14px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--ink);
+    width: 100%;
+  }
+  label { display: block; margin: 12px 0 4px; color: var(--ink-soft); font-size: 13px; }
+  a { color: var(--office); }
+
+  /* ---------- login ---------- */
+  #loginScreen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .login-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 36px;
+    width: 340px;
+  }
+  .login-card h1 { font-size: 20px; margin: 0 0 4px; }
+  .login-card p.sub { color: var(--muted); margin: 0 0 20px; font-size: 13px; }
+  .error-text { color: var(--danger); font-size: 13px; margin-top: 10px; }
+  .switch-link { margin-top: 16px; font-size: 13px; text-align: center; }
+
+  /* ---------- app shell ---------- */
+  #app { display: none; min-height: 100vh; flex-direction: column; }
+  #app.shown { display: flex; }
+  .app-header { background: #fff; border-bottom: 1px solid var(--border); padding: 8px 20px; display: flex; align-items: center; }
+  .brand-logo { height: 36px; width: auto; max-width: 240px; object-fit: contain; display: block; }
+  .brand-fallback { display: inline-flex; align-items: center; gap: 10px; font-weight: 600; font-size: 17px; color: var(--ink); }
+  /* The Wrangla W is an SVG used as a mask, so it takes whatever colour the element has. */
+  .w-mark { display: inline-block; width: 1.146em; height: 1em; font-size: 34px; background: currentColor; -webkit-mask: url(wrangla-w.svg) no-repeat center / contain; mask: url(wrangla-w.svg) no-repeat center / contain; flex-shrink: 0; }
+  .brand-fallback .w-mark { color: var(--office); }
+  .powered-by { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 18px; font-size: 12px; color: var(--muted); }
+  .powered-by .w-mark { font-size: 14px; color: var(--muted); }
+  .login-card .brand-logo { height: 48px; max-width: 100%; margin-bottom: 18px; }
+  .login-card .brand-fallback { margin-bottom: 18px; }
+  .settings-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; max-width: 560px; margin-bottom: 20px; }
+  .settings-card h3 { margin: 0 0 4px; font-size: 15px; }
+  .welcome-banner { background: var(--office-bg); border-left: 3px solid var(--office); border-radius: 4px; padding: 12px 16px; margin-bottom: 18px; max-width: 560px; font-size: 13.5px; }
+  .swatch { width: 28px; height: 28px; padding: 0; border-radius: 50%; border: 2px solid var(--border); }
+  .preset { display: flex; align-items: center; gap: 8px; padding: 6px 10px; font-size: 12.5px; }
+  .preset i { display: inline-block; width: 16px; height: 16px; border-radius: 50%; border: 1px solid rgba(0,0,0,.15); }
+  .contrast-line { font-size: 12.5px; margin-top: 6px; }
+  .contrast-line.ok { color: var(--done); }
+  .contrast-line.bad { color: var(--danger); font-weight: 600; }
+  .dragging { opacity: 0.4; }
+  .drop-target { outline: 2px dashed var(--office); outline-offset: -2px; background: var(--office-bg); }
+  .card[draggable=true], .month-chip[draggable=true] { cursor: grab; }
+  #workerList { display: none; }
+  #view-calendar.phone-list > :not(#workerList) { display: none !important; }
+  #view-calendar.phone-list #workerList { display: block; }
+  #workerList h3.list-day { font-size: 13px; margin: 18px 0 8px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.04em; }
+  .day-tag { display: inline-block; font-size: 10px; font-weight: 700; padding: 0 6px; border-radius: 8px; margin-right: 4px; vertical-align: 1px; }
+  .time-day { padding: 8px 0; border-top: 1px solid var(--border); }
+  .time-day:first-child { border-top: none; padding-top: 0; }
+  .time-day .time-day-label { font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
+  .logo-preview { background: #fff; border: 1px dashed var(--border); border-radius: 6px; padding: 12px; margin: 8px 0; min-height: 60px; display: flex; align-items: center; }
+  .app-body { display: grid; grid-template-columns: 92px 1fr; flex: 1; min-height: 0; }
+  nav.sidebar {
+    background: var(--main);
+    color: var(--on-main);
+    padding: 16px 8px;
+    display: flex;
+    flex-direction: column;
+  }
+  nav.sidebar .brand { font-weight: 600; font-size: 12px; margin-bottom: 16px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  nav.sidebar .brand .w-mark { font-size: 34px; }
+  nav.sidebar button.navlink {
+    background: transparent;
+    border: none;
+    color: var(--on-main-soft);
+    text-align: center;
+    padding: 8px 4px;
+    border-radius: 6px;
+    margin-bottom: 2px;
+    font-size: 11.5px;
+    line-height: 1.2;
+  }
+  nav.sidebar a.navlink { color: var(--on-main-soft); text-align: center; padding: 8px 4px; font-size: 11.5px; line-height: 1.2; border-radius: 6px; }
+  nav.sidebar button.navlink.active { background: var(--on-main-active); color: var(--on-main); }
+  nav.sidebar .who { margin-top: auto; font-size: 10.5px; color: var(--on-main-faint); text-align: center; }
+  nav.sidebar .who div { overflow-wrap: break-word; }
+  nav.sidebar .who button { margin-top: 8px; width: 100%; background: transparent; border-color: var(--on-main-line); color: var(--on-main-soft); font-size: 10.5px; padding: 6px 4px; }
+
+  main { padding: 24px 28px; overflow-x: auto; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .topbar h2 { margin: 0; font-size: 19px; font-weight: 600; }
+  .weeknav { display: flex; align-items: center; gap: 10px; }
+  .weeknav button { padding: 6px 10px; }
+
+  .week-grid { display: grid; grid-template-columns: repeat(5, minmax(150px, 1.15fr)) repeat(2, minmax(85px, 0.55fr)); gap: 10px; min-width: 900px; }
+  .day-col { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; min-height: 200px; }
+  .day-col .day-head { font-weight: 600; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .day-col .day-head .dow { font-size: 12px; color: var(--muted); font-weight: 400; }
+  .day-col.today .day-head { color: var(--office); }
+  .day-col.weekend { padding: 6px; }
+  .day-col.weekend .day-head { font-size: 12px; margin-bottom: 5px; padding-bottom: 5px; }
+  .day-col.weekend .day-head .dow { font-size: 10.5px; }
+  .day-col.weekend .card { padding: 5px 6px; }
+  .day-col.weekend .card .meta, .day-col.weekend .card .pill { display: none; }
+  .day-col.weekend .card .title { font-size: 12px; }
+
+  .month-header { display: grid; grid-template-columns: repeat(5, minmax(120px, 1.1fr)) repeat(2, minmax(55px, 0.4fr)); gap: 6px; min-width: 900px; margin-bottom: 6px; }
+  .month-header div { font-size: 12px; color: var(--muted); font-weight: 600; text-align: center; }
+  .month-grid { display: grid; grid-template-columns: repeat(5, minmax(120px, 1.1fr)) repeat(2, minmax(55px, 0.4fr)); gap: 6px; min-width: 900px; }
+  .month-cell { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 6px; min-height: 90px; }
+  .month-cell.weekend { padding: 4px; min-height: 60px; }
+  .weekend-badge { font-size: 10px; color: var(--office); background: var(--office-bg); border: none; border-radius: 10px; padding: 1px 6px; cursor: pointer; }
+  .month-cell.outside { opacity: 0.4; }
+  .month-cell.today { border-color: var(--office); }
+  .month-cell .date-num { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .month-cell.today .date-num { color: var(--office); font-weight: 600; }
+  .month-chip { font-size: 11px; padding: 2px 5px; border-radius: 4px; border-left: 2px solid var(--office); background: var(--office-bg); color: var(--ink); margin-bottom: 3px; cursor: pointer; overflow: hidden; }
+  .month-chip.site { border-left-color: var(--site); background: var(--site-bg); }
+  .month-chip.completed { opacity: 0.6; }
+  .month-chip.unassigned { border-left-color: var(--danger); background: #FBEEEC; }
+  .month-chip .chip-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .month-chip .chip-meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9.5px; color: var(--ink-soft); display: flex; align-items: center; gap: 3px; }
+  .chip-est { display: flex; gap: 4px; margin-top: 2px; }
+  .est-badge { font-size: 9px; padding: 0 4px; border-radius: 3px; background: rgba(0,0,0,0.06); color: var(--ink-soft); font-weight: 700; }
+  .est-badge.over { background: #F4D9D4; color: var(--danger); }
+  .month-more { font-size: 11px; color: var(--office); cursor: pointer; background: none; border: none; padding: 0; }
+
+  .card {
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--office);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    background: #fff;
+    cursor: pointer;
+  }
+  .card.site { border-left-color: var(--site); }
+  .card.completed { border-left-color: var(--done); opacity: 0.7; }
+  .card.unassigned { border-left-color: var(--danger); background: #FBEEEC; }
+  .card .time { font-size: 12px; color: var(--muted); }
+  .card .title { font-weight: 600; margin: 2px 0; }
+  .card .meta { font-size: 12px; color: var(--ink-soft); }
+  .card .pill { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 20px; margin-top: 4px; }
+  .pill.office { background: var(--office-bg); color: var(--office); }
+  .pill.site { background: var(--site-bg); color: var(--site); }
+  .pill.done { background: var(--done-bg); color: var(--done); }
+  .who-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+
+  table.admin-table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  table.report-table { table-layout: fixed; }
+  table.report-table th, table.report-table td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  table.report-table col.col-date { width: 8%; }
+  table.report-table col.col-job { width: 19%; }
+  table.report-table col.col-type { width: 9%; }
+  table.report-table col.col-client { width: 12%; }
+  table.report-table col.col-location { width: 14%; }
+  table.report-table col.col-time { width: 14%; }
+  table.report-table col.col-estimate { width: 11%; }
+  table.report-table col.col-duration { width: 13%; }
+  table.admin-table th, table.admin-table td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 13.5px; }
+  table.admin-table th { color: var(--muted); font-weight: 500; }
+
+  /* ---------- modal ---------- */
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(31,42,36,0.45); align-items: center; justify-content: center; z-index: 50; }
+  .overlay.shown { display: flex; }
+  .modal { background: var(--surface); border-radius: var(--radius); padding: 26px; width: 420px; max-height: 88vh; overflow-y: auto; }
+  .modal h3 { margin: 0 0 4px; }
+  .modal .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .modal-actions { display: flex; justify-content: space-between; margin-top: 22px; }
+  .modal-actions .right { display: flex; gap: 8px; }
+
+  .comment-item { padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .comment-item:last-child { border-bottom: none; }
+  .comment-item .comment-meta { font-size: 11.5px; color: var(--muted); margin-bottom: 2px; }
+  .attachment-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .attachment-row:last-child { border-bottom: none; }
+  .attachment-row a { color: var(--office); text-decoration: none; }
+  .attachment-row .attachment-meta { font-size: 11.5px; color: var(--muted); }
+
+  /* ---------- print / export ---------- */
+  #printArea { display: none; }
+  @media print {
+    body * { visibility: hidden; }
+    #printArea, #printArea * { visibility: visible; }
+    #printArea { display: block; position: absolute; top: 0; left: 0; width: 100%; padding: 20px; }
+    #printArea h1 { font-size: 18px; margin: 0 0 4px; }
+    #printArea .print-sub { color: #555; font-size: 12px; margin-bottom: 16px; }
+    #printArea .print-brand { display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 16px; }
+    #printArea .print-brand .brand-logo { height: 44px; max-width: 220px; }
+    #printArea .print-company { text-align: right; font-size: 11px; color: #444; line-height: 1.4; }
+    #printArea .print-company strong { font-size: 13px; color: #000; }
+    #printArea table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    #printArea th, #printArea td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #ccc; }
+    #printArea th { color: #555; }
+  }
+
+  /* ---------- mobile ---------- */
+  @media (max-width: 760px) {
+    .app-body { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+    .brand-logo { height: 28px; }
+    nav.sidebar { flex-direction: row; align-items: center; padding: 10px 14px; overflow-x: auto; }
+    nav.sidebar .brand { margin-bottom: 0; margin-right: 12px; flex-shrink: 0; flex-direction: row; }
+    nav.sidebar .brand .w-mark { font-size: 22px; }
+    nav.sidebar button.navlink { white-space: nowrap; margin-bottom: 0; margin-right: 2px; }
+    nav.sidebar .who { margin-top: 0; margin-left: auto; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    nav.sidebar .who div { display: none; }
+    nav.sidebar .who button { margin-top: 0; width: auto; white-space: nowrap; }
+    main { padding: 14px; }
+    .topbar { flex-direction: column; align-items: stretch; }
+    .weeknav { flex-wrap: wrap; }
+    .week-grid, .month-grid, .month-header { grid-template-columns: 1fr; min-width: 0; }
+    .month-header { display: none; }
+    .day-col.weekend { padding: 10px; }
+    .day-col.weekend .card .meta, .day-col.weekend .card .pill { display: block; }
+    .day-col.weekend .card .title { font-size: inherit; }
+    .month-cell { min-height: unset; }
+    .modal { width: 100%; max-width: 380px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-card">
+    <div id="loginBrand"></div>
+    <h1 id="loginTitle">Log in</h1>
+    <p class="sub" id="loginSub">Enter your details to see your schedule.</p>
+    <form id="loginForm">
+      <label>Email</label>
+      <input type="email" id="loginEmail" required>
+      <label>Password</label>
+      <input type="password" id="loginPassword" required minlength="8">
+      <div id="setupExtraFields" style="display:none">
+        <label>Your name</label>
+        <input type="text" id="setupName">
+        <label>Setup key</label>
+        <input type="text" id="setupKey">
+      </div>
+      <button type="submit" class="primary" style="width:100%; margin-top:18px;" id="loginSubmit">Log in</button>
+      <div class="error-text" id="loginError"></div>
+    </form>
+    <form id="codeForm" style="display:none">
+      <h1>Check your email</h1>
+      <p class="sub" id="codeSub">We've emailed you a 6-digit code.</p>
+      <label>6-digit code</label>
+      <input type="text" id="loginCode" inputmode="numeric" autocomplete="one-time-code" maxlength="7" required style="font-size:20px; letter-spacing:4px; text-align:center;">
+      <button type="submit" class="primary" style="width:100%; margin-top:18px;">Confirm</button>
+      <div class="error-text" id="codeError"></div>
+      <div class="switch-link"><a href="#" id="codeBack">Back to log in</a></div>
+    </form>
+    <div class="powered-by"><span class="w-mark"></span>Powered by Wrangla</div>
+    <div class="switch-link" id="setupLinkRow" style="display:none">
+      <a href="#" id="toggleSetup">First time setting this up? Create the admin account</a>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <header class="app-header" id="appHeader"></header>
+  <div class="app-body">
+  <nav class="sidebar">
+    <div class="brand"><span class="w-mark"></span><span>Wrangla</span></div>
+    <button class="navlink active" data-view="calendar">Calendar</button>
+    <button class="navlink" data-view="clients">Clients</button>
+    <button class="navlink" id="navTeam" data-view="team" style="display:none">Team</button>
+    <button class="navlink" id="navReports" data-view="reports" style="display:none">Reports</button>
+    <button class="navlink" id="navSettings" data-view="settings" style="display:none">Settings</button>
+    <a href="help.html" target="_blank" rel="noopener" class="navlink" style="text-decoration:none; display:block;">Help</a>
+    <div class="who">
+      <div id="whoName"></div>
+      <button id="logoutBtn">Log out</button>
+    </div>
+  </nav>
+
+  <main>
+    <div id="view-calendar">
+      <div id="workerList"></div>
+      <div class="topbar">
+        <h2 id="weekLabel"></h2>
+        <div class="weeknav">
+          <button id="prevPeriod">&larr; Prev</button>
+          <button id="thisPeriod">Today</button>
+          <button id="nextPeriod">Next &rarr;</button>
+          <select id="viewMode">
+            <option value="week">Week view</option>
+            <option value="month">Month view</option>
+          </select>
+          <select id="workerFilter" style="display:none"></select>
+          <button id="exportBtn">Export PDF</button>
+          <button class="primary" id="newActivityBtn">New</button>
+        </div>
+      </div>
+      <div class="week-grid" id="weekGrid"></div>
+      <div class="month-header" id="monthHeader" style="display:none">
+        <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
+      </div>
+      <div class="month-grid" id="monthGrid" style="display:none"></div>
+
+      <div style="margin-top:24px; border-top:1px solid var(--border); padding-top:16px;">
+        <h3 style="font-size:14px; margin:0 0 4px; color:var(--ink-soft);">Utilisation</h3>
+        <p id="calUtilizationLabel" style="font-size:12px; color:var(--muted); margin:0 0 10px;"></p>
+        <div id="calUtilizationHighlight"></div>
+        <table class="admin-table">
+          <thead><tr><th>Person</th><th>Week (est.)</th><th>Week (actual)</th><th>Week %</th><th>Month (est.)</th><th>Month (actual)</th><th>Month %</th></tr></thead>
+          <tbody id="calUtilizationBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="view-clients" style="display:none">
+      <div class="topbar">
+        <h2>Clients</h2>
+        <button class="primary" id="newClientBtn">New client</button>
+      </div>
+      <table class="admin-table">
+        <thead><tr><th>Name</th><th>Nickname</th><th>Address</th><th>Contact</th><th>Phone</th><th></th></tr></thead>
+        <tbody id="clientsTableBody"></tbody>
+      </table>
+    </div>
+
+    <div id="view-team" style="display:none">
+      <div class="topbar">
+        <h2>Team</h2>
+        <button class="primary" id="newUserBtn">New team member</button>
+      </div>
+      <table class="admin-table">
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead>
+        <tbody id="usersTableBody"></tbody>
+      </table>
+    </div>
+
+    <div id="view-reports" style="display:none">
+      <div class="topbar">
+        <h2>Reports</h2>
+      </div>
+      <div class="weeknav" style="margin-bottom:16px; flex-wrap:wrap;">
+        <label style="margin:0; display:flex; align-items:center; gap:6px;">From <input type="date" id="reportStart" style="width:auto;"></label>
+        <label style="margin:0; display:flex; align-items:center; gap:6px;">To <input type="date" id="reportEnd" style="width:auto;"></label>
+        <select id="reportWorkerFilter"></select>
+        <select id="reportClientFilter"></select>
+        <button class="primary" id="runReportBtn">Run report</button>
+        <button id="exportReportBtn">Export PDF</button>
+      </div>
+      <div id="reportOutput"></div>
+
+      <div style="margin-top:32px; border-top:1px solid var(--border); padding-top:20px;">
+        <h3 style="font-size:15px; margin:0 0 12px;">Utilisation</h3>
+        <div id="utilizationHighlight"></div>
+        <table class="admin-table">
+          <thead><tr><th>Person</th><th>This week (est.)</th><th>This week (actual)</th><th>Week util.</th><th>This month (est.)</th><th>This month (actual)</th><th>Month util.</th></tr></thead>
+          <tbody id="utilizationBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="view-settings" style="display:none">
+      <div class="topbar">
+        <h2>Settings</h2>
+      </div>
+      <div class="welcome-banner" id="welcomeBanner" style="display:none">
+        <strong>Welcome! Let's set up your company.</strong><br>
+        These details appear in the header, on the login screen and on printed reports. You can change them any time from Settings.
+      </div>
+      <form id="settingsForm">
+        <div class="settings-card">
+          <h3>Company details</h3>
+          <label>Company name</label>
+          <input type="text" id="sName" placeholder="e.g. Acme Field Services">
+          <label>Address</label>
+          <input type="text" id="sAddress">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <div><label>Phone</label><input type="text" id="sPhone"></div>
+            <div><label>Email</label><input type="email" id="sEmail"></div>
+          </div>
+          <label>ABN or other registration number</label>
+          <input type="text" id="sReg">
+        </div>
+        <div class="settings-card">
+          <h3>Colours</h3>
+          <p style="color:var(--muted); font-size:12.5px; margin:0 0 8px;">The main colour is used for the sidebar and buttons, the accent colour for links, highlights and the Wrangla W.</p>
+          <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;" id="presetRow"></div>
+          <div style="display:flex; gap:24px; align-items:center;">
+            <label style="display:flex; align-items:center; gap:8px; margin:0;"><input type="color" id="sMain" class="swatch"> Main</label>
+            <label style="display:flex; align-items:center; gap:8px; margin:0;"><input type="color" id="sAccent" class="swatch"> Accent</label>
+          </div>
+          <div id="contrastMain" class="contrast-line"></div>
+          <div id="contrastAccent" class="contrast-line"></div>
+        </div>
+        <div class="settings-card">
+          <h3>Scheduling</h3>
+          <label style="display:flex; align-items:center; gap:8px; margin:8px 0 4px;">
+            <input type="checkbox" id="sSkipWeekends" style="width:auto;"> Skip weekends on multi-day items
+          </label>
+          <p style="color:var(--muted); font-size:12.5px; margin:0;">With this on, a 3-day item starting Thursday lands on Thursday, Friday and Monday. Single-day items always stay on the day you pick.</p>
+        </div>
+        <div class="settings-card">
+          <h3>Sign-in security</h3>
+          <label style="display:flex; align-items:center; gap:8px; margin:8px 0 4px;">
+            <input type="checkbox" id="sTwofa" style="width:auto;"> Require an emailed 6-digit code when logging in
+          </label>
+          <p style="color:var(--muted); font-size:12.5px; margin:0;" id="twofaStatus"></p>
+        </div>
+        <div class="settings-card">
+          <h3>Logo</h3>
+          <p style="color:var(--muted); font-size:12.5px; margin:0;">PNG, JPG, WebP, GIF or SVG, up to 2MB. It is shown at a fixed height with its proportions kept. Until you upload one, the Wrangla W and your company name are used.</p>
+          <div class="logo-preview" id="logoPreview"></div>
+          <input type="file" id="sLogoFile" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button type="button" id="uploadLogoBtn">Upload logo</button>
+            <button type="button" class="danger" id="removeLogoBtn">Remove logo</button>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; max-width:560px;">
+          <button type="submit" class="primary" id="saveSettingsBtn">Save settings</button>
+          <button type="button" id="skipSetupBtn" style="display:none">Skip for now</button>
+          <span id="settingsSaved" style="align-self:center; color:var(--done); font-size:13px;"></span>
+        </div>
+      </form>
+    </div>
+  </main>
+  </div>
+</div>
+
+<!-- Activity modal -->
+<div class="overlay" id="activityOverlay">
+  <div class="modal">
+    <h3 id="activityModalTitle">New activity</h3>
+    <form id="activityForm">
+      <label>Title</label>
+      <input type="text" id="fTitle" required>
+
+      <div class="row2">
+        <div>
+          <label>Type</label>
+          <select id="fType">
+            <option value="appointment">Appointment</option>
+            <option value="task">Task</option>
+          </select>
+        </div>
+        <div>
+          <label>Client</label>
+          <select id="fClient"><option value="">None</option></select>
+        </div>
+      </div>
+
+      <label>Type of work</label>
+      <input type="text" id="fJobType" list="jobTypeOptions" placeholder="e.g. Site Inspection, Install, Training...">
+      <datalist id="jobTypeOptions"></datalist>
+
+      <div class="row2">
+        <div>
+          <label>Estimated time <span style="color:var(--muted); font-weight:400;">(total hours)</span></label>
+          <input type="number" id="fEstimate" min="0" step="0.25" placeholder="e.g. 2.5">
+        </div>
+        <div>
+          <label>Number of days <span style="color:var(--muted); font-weight:400;">(max 60)</span></label>
+          <input type="number" id="fDays" min="1" max="60" step="1" value="1">
+        </div>
+      </div>
+
+      <div id="assignRow">
+        <label>Assign to</label>
+        <select id="fAssigned"></select>
+      </div>
+
+      <div id="apptFields">
+        <div class="row2">
+          <div>
+            <label>Location</label>
+            <select id="fLocation">
+              <option value="head_office">Head office</option>
+              <option value="project_site">Job site</option>
+            </select>
+          </div>
+          <div>
+            <label>Date</label>
+            <input type="date" id="fDate">
+          </div>
+        </div>
+        <div id="siteRow" style="display:none">
+          <label>Site</label>
+          <select id="fSite"><option value="">One-off address (not saved to this client)</option></select>
+        </div>
+        <div class="row2" id="siteAddressRow" style="display:none">
+          <div style="grid-column: 1 / -1;">
+            <label>Site address</label>
+            <input type="text" id="fSiteAddress" placeholder="Only needed if not picking a saved site above">
+          </div>
+        </div>
+      </div>
+
+      <div id="taskFields" style="display:none">
+        <label>Due date <span style="color:var(--muted); font-weight:400;">(the first day, if it runs for several)</span></label>
+        <input type="date" id="fDue">
+      </div>
+
+      <div id="recurrenceSection" style="display:none;">
+        <label style="display:flex; align-items:center; gap:8px; margin-top:16px;">
+          <input type="checkbox" id="fRepeats" style="width:auto;"> Repeats
+        </label>
+        <div id="recurrenceFields" style="display:none; margin-top:8px; padding:12px; background:var(--bg); border-radius:6px;">
+          <div class="row2">
+            <div>
+              <label>Frequency</label>
+              <select id="fFrequency">
+                <option value="weekly">Weekly</option>
+                <option value="fortnightly">Fortnightly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </div>
+            <div id="monthlyModeRow" style="display:none">
+              <label>On</label>
+              <select id="fMonthlyMode">
+                <option value="date">Same date each month</option>
+                <option value="weekday">Same weekday each month (e.g. 3rd Tuesday)</option>
+              </select>
+            </div>
+          </div>
+          <label>Number of occurrences <span style="color:var(--muted); font-weight:400;">(max 52)</span></label>
+          <input type="number" id="fOccurrences" min="1" max="52" value="12">
+          <p style="font-size:12px; color:var(--muted); margin:8px 0 0;">The first date comes from the Date/Due date field above. Each occurrence is created as its own job, so they can be completed and logged independently.</p>
+        </div>
+      </div>
+
+      <label>Notes</label>
+      <textarea id="fNotes" rows="3"></textarea>
+
+      <div class="modal-actions">
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="danger" id="deleteActivityBtn" style="display:none">Delete</button>
+          <button type="button" class="danger" id="deleteSeriesBtn" style="display:none">Delete this + future</button>
+        </div>
+        <div class="right">
+          <button type="button" id="cancelActivityBtn">Cancel</button>
+          <button type="submit" class="primary" id="saveActivityBtn">Save</button>
+        </div>
+      </div>
+    </form>
+    <div id="completeSection" style="display:none; border-top:1px solid var(--border); margin-top:18px; padding-top:18px;">
+      <h3 style="font-size:15px;" id="completeSectionTitle">Log time and mark complete</h3>
+      <div id="timeLogDays"></div>
+      <button type="button" class="primary" id="markCompleteBtn" style="margin-top:14px; width:100%;">Mark complete</button>
+    </div>
+
+    <div id="attachmentsSection" style="display:none; border-top:1px solid var(--border); margin-top:18px; padding-top:18px;">
+      <h3 style="font-size:15px;">Attachments</h3>
+      <div id="attachmentsList" style="margin-bottom:10px;"></div>
+      <input type="file" id="newAttachmentFile" accept="image/*,application/pdf" style="margin-bottom:8px;">
+      <button type="button" id="uploadAttachmentBtn" style="width:100%;">Upload</button>
+    </div>
+
+    <div id="commentsSection" style="display:none; border-top:1px solid var(--border); margin-top:18px; padding-top:18px;">
+      <h3 style="font-size:15px;">Team notes</h3>
+      <div id="commentsList" style="max-height:180px; overflow-y:auto; margin-bottom:10px;"></div>
+      <textarea id="newCommentText" rows="2" placeholder="Add a note for the team..."></textarea>
+      <button type="button" id="postCommentBtn" style="margin-top:8px; width:100%;">Post note</button>
+    </div>
+  </div>
+</div>
+
+<!-- Client modal -->
+<div class="overlay" id="clientOverlay">
+  <div class="modal">
+    <h3 id="clientModalTitle">New client</h3>
+    <form id="clientForm">
+      <label>Name</label>
+      <input type="text" id="cName" required>
+      <label>Nickname <span style="color:var(--muted); font-weight:400;">(short name for the calendar, e.g. "Acme" for "Acme Building")</span></label>
+      <input type="text" id="cNickname" placeholder="e.g. Acme">
+      <label>Address</label>
+      <input type="text" id="cAddress" placeholder="Head office / billing address">
+      <label>Contact name</label>
+      <input type="text" id="cContact">
+      <label>Phone</label>
+      <input type="text" id="cPhone">
+      <label>Email</label>
+      <input type="email" id="cEmail">
+      <label>Notes</label>
+      <textarea id="cNotes" rows="2"></textarea>
+      <div class="modal-actions">
+        <div><button type="button" class="danger" id="deleteClientBtn" style="display:none">Delete</button></div>
+        <div class="right">
+          <button type="button" id="cancelClientBtn">Cancel</button>
+          <button type="submit" class="primary">Save</button>
+        </div>
+      </div>
+    </form>
+    <div id="sitesSection" style="display:none; border-top:1px solid var(--border); margin-top:18px; padding-top:16px;">
+      <h3 style="font-size:15px; margin:0 0 10px;">Job sites</h3>
+      <div id="sitesList"></div>
+      <div class="row2" style="margin-top:10px;">
+        <input type="text" id="newSiteName" placeholder="Site name, e.g. Block C">
+        <input type="text" id="newSiteAddress" placeholder="Site address">
+      </div>
+      <div class="row2" style="margin-top:8px;">
+        <input type="text" id="newSiteContact" placeholder="Site contact name">
+        <input type="text" id="newSitePhone" placeholder="Site contact phone">
+      </div>
+      <button type="button" id="addSiteBtn" style="margin-top:8px; width:100%;">Add site</button>
+      <button type="button" id="cancelSiteEditBtn" style="margin-top:6px; width:100%; display:none;">Cancel edit</button>
+    </div>
+  </div>
+</div>
+
+<!-- User modal -->
+<div class="overlay" id="userOverlay">
+  <div class="modal">
+    <h3 id="userModalTitle">New team member</h3>
+    <form id="userForm">
+      <label>Name</label>
+      <input type="text" id="uName" required>
+      <label>Email</label>
+      <input type="email" id="uEmail" required>
+      <label>Password <span id="uPasswordHint" style="color:var(--muted)">(leave blank to keep current)</span></label>
+      <input type="password" id="uPassword" minlength="8">
+      <div class="row2">
+        <div>
+          <label>Role</label>
+          <select id="uRole">
+            <option value="worker">Worker</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div>
+          <label>Calendar color</label>
+          <input type="color" id="uColor" value="#3B6E71">
+        </div>
+      </div>
+      <label style="display:flex; align-items:center; gap:8px; margin-top:14px;">
+        <input type="checkbox" id="uActive" style="width:auto;" checked> Active
+      </label>
+      <div class="modal-actions">
+        <div></div>
+        <div class="right">
+          <button type="button" id="cancelUserBtn">Cancel</button>
+          <button type="submit" class="primary">Save</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="printArea"></div>
+
+<script>
+let me = null;
+let users = [];
+let clients = [];
+let sites = [];
+let weekStart = startOfWeek(new Date());
+let editingActivityId = null;
+let editingActivityStatus = null;
+let editingActivitySeriesId = null;
+let editingClientId = null;
+let editingUserId = null;
+
+function startOfWeek(d) {
+  const date = new Date(d);
+  const day = (date.getDay() + 6) % 7; // Monday = 0
+  date.setDate(date.getDate() - day);
+  date.setHours(0,0,0,0);
+  return date;
+}
+function fmtDate(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate()+n); return x; }
+function dayLabel(d) { return d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }); }
+
+async function api(path, opts = {}) {
+  const res = await fetch('/api' + path, {
+    ...opts,
+    headers: { 'Content-Type': 'application/json', ...(opts.headers||{}) },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Something went wrong');
+  return data;
+}
+
+async function apiUpload(path, formData) {
+  const res = await fetch('/api' + path, { method: 'POST', body: formData });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Upload failed');
+  return data;
+}
+
+function formatTimestamp(sqliteDatetime) {
+  return new Date(sqliteDatetime.replace(' ', 'T') + 'Z').toLocaleString();
+}
+
+// ---------- login ----------
+
+let setupMode = false;
+document.getElementById('toggleSetup').addEventListener('click', (e) => {
+  e.preventDefault();
+  setupMode = !setupMode;
+  document.getElementById('setupExtraFields').style.display = setupMode ? 'block' : 'none';
+  document.getElementById('loginTitle').textContent = setupMode ? 'Create admin account' : 'Log in';
+  document.getElementById('loginSub').textContent = setupMode
+    ? 'One-time setup. Ask whoever hosts this app for the setup key.'
+    : 'Enter your details to see your schedule.';
+  document.getElementById('loginSubmit').textContent = setupMode ? 'Create account' : 'Log in';
+  e.target.textContent = setupMode ? 'Back to log in' : 'First time setting this up? Create the admin account';
+});
+
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+  try {
+    if (setupMode) {
+      await api('/setup', { method: 'POST', body: JSON.stringify({
+        setup_key: document.getElementById('setupKey').value,
+        name: document.getElementById('setupName').value,
+        email, password,
+      })});
+      document.getElementById('toggleSetup').click(); // setup is one-time; back to the normal login view
+    }
+    const result = await api('/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+    if (result.needs_code) { showCodeStep(result); return; }
+    await boot();
+  } catch (err) {
+    errEl.textContent = err.message;
+  }
+});
+
+// Second login step: the 6-digit code emailed after the password was accepted.
+let loginChallenge = null;
+function showCodeStep(result) {
+  loginChallenge = result ? result.challenge : null;
+  const on = !!result;
+  document.getElementById('codeForm').style.display = on ? 'block' : 'none';
+  ['loginTitle', 'loginSub', 'loginForm', 'setupLinkRow'].forEach(id => {
+    document.getElementById(id).style.display = on ? 'none' : '';
+  });
+  if (!on) document.getElementById('setupLinkRow').style.display = publicSettings.needs_setup ? 'block' : 'none';
+  if (on) {
+    document.getElementById('codeSub').textContent = `We've emailed a 6-digit code to ${result.sent_to}. It is valid for 10 minutes.`;
+    document.getElementById('loginCode').value = '';
+    document.getElementById('codeError').textContent = '';
+    document.getElementById('loginCode').focus();
+  }
+}
+document.getElementById('codeBack').addEventListener('click', (e) => { e.preventDefault(); showCodeStep(null); });
+document.getElementById('codeForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById('codeError');
+  errEl.textContent = '';
+  try {
+    await api('/login/verify', { method: 'POST', body: JSON.stringify({ challenge: loginChallenge, code: document.getElementById('loginCode').value }) });
+    showCodeStep(null);
+    await boot();
+  } catch (err) { errEl.textContent = err.message; }
+});
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await api('/logout', { method: 'POST' });
+  location.reload();
+});
+
+// ---------- boot ----------
+
+async function boot() {
+  try {
+    publicSettings = await api('/public-settings');
+  } catch { publicSettings = { company_name: '', has_logo: false, needs_setup: false }; }
+  applyTheme(publicSettings.main_color, publicSettings.accent_color);
+  applyBranding();
+  document.getElementById('setupLinkRow').style.display = publicSettings.needs_setup ? 'block' : 'none';
+  try {
+    me = await api('/me');
+  } catch {
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('app').classList.remove('shown');
+    return;
+  }
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').classList.add('shown');
+  document.getElementById('whoName').textContent = me.name + (me.role === 'admin' ? ' (admin)' : '');
+  if (me.role === 'admin') {
+    document.getElementById('navTeam').style.display = 'block';
+    document.getElementById('navSettings').style.display = 'block';
+    document.getElementById('workerFilter').style.display = 'block';
+  } else {
+    document.getElementById('reportWorkerFilter').style.display = 'none';
+    document.getElementById('reportClientFilter').style.display = 'none';
+  }
+  document.getElementById('navReports').style.display = 'block';
+  const today = new Date();
+  document.getElementById('reportStart').value = fmtDate(startOfWeek(today));
+  document.getElementById('reportEnd').value = fmtDate(addDays(startOfWeek(today), 6));
+  users = await api('/users');
+  clients = await api('/clients');
+  sites = await api('/sites');
+  populateSelects();
+  await refreshJobTypes();
+  renderClientsTable();
+  renderUsersTable();
+  await renderCurrentView();
+  if (me.role === 'admin') {
+    companySettings = await api('/settings');
+    if (!companySettings.setup_complete) { showView('settings'); document.getElementById('welcomeBanner').style.display = 'block'; document.getElementById('skipSetupBtn').style.display = 'inline-block'; }
+  }
+}
+
+// ---------- company branding & settings ----------
+
+let publicSettings = { company_name: '', has_logo: false, logo_version: '' };
+let companySettings = {};
+
+// ---------- theme (main and accent colours) ----------
+
+const DEFAULT_MAIN = '#1F2A24', DEFAULT_ACCENT = '#3B6E71';
+const COLOR_PRESETS = [
+  { name: 'Forest', main: '#1F2A24', accent: '#3B6E71' },
+  { name: 'Navy', main: '#14213D', accent: '#1D6FA3' },
+  { name: 'Charcoal', main: '#2B2B2B', accent: '#B85C00' },
+  { name: 'Plum', main: '#3A1F3D', accent: '#8A3FA0' },
+  { name: 'Slate', main: '#263238', accent: '#2E7D4F' },
+  { name: 'Sand', main: '#E8E2D0', accent: '#7A4E1D' },
+];
+function hexToRgb(h) { return [1,3,5].map(i => parseInt(h.slice(i, i+2), 16)); }
+function rgbToHex(r) { return '#' + r.map(v => Math.round(v).toString(16).padStart(2, '0')).join('').toUpperCase(); }
+function luminance(hex) {
+  const [r, g, b] = hexToRgb(hex).map(v => v / 255).map(c => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+function contrastRatio(a, b) {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+function mixHex(a, b, t) { // t = share of a
+  const x = hexToRgb(a), y = hexToRgb(b);
+  return rgbToHex(x.map((v, i) => v * t + y[i] * (1 - t)));
+}
+function readableOn(hex) { return contrastRatio(hex, '#FFFFFF') >= contrastRatio(hex, '#111111') ? '#FFFFFF' : '#111111'; }
+
+function applyTheme(main, accent) {
+  main = /^#[0-9a-f]{6}$/i.test(main) ? main : DEFAULT_MAIN;
+  accent = /^#[0-9a-f]{6}$/i.test(accent) ? accent : DEFAULT_ACCENT;
+  const on = readableOn(main);
+  const root = document.documentElement.style;
+  root.setProperty('--main', main);
+  root.setProperty('--on-main', on);
+  root.setProperty('--on-main-soft', mixHex(on, main, 0.78));
+  root.setProperty('--on-main-faint', mixHex(on, main, 0.6));
+  root.setProperty('--on-main-line', mixHex(on, main, 0.3));
+  root.setProperty('--on-main-active', on === '#FFFFFF' ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.10)');
+  root.setProperty('--office', accent);
+  root.setProperty('--office-bg', mixHex(accent, '#FFFFFF', 0.12));
+}
+
+function updateContrastNotes() {
+  const main = document.getElementById('sMain').value, accent = document.getElementById('sAccent').value;
+  const m = contrastRatio(main, readableOn(main));
+  const a = contrastRatio(accent, '#FFFFFF');
+  const mEl = document.getElementById('contrastMain'), aEl = document.getElementById('contrastAccent');
+  mEl.className = 'contrast-line ' + (m >= 4.5 ? 'ok' : 'bad');
+  mEl.textContent = `Sidebar text on main colour: ${m.toFixed(1)}:1 ${m >= 4.5 ? '\u2713 readable' : '\u2717 hard to read, pick a different main colour'}`;
+  aEl.className = 'contrast-line ' + (a >= 4.5 ? 'ok' : 'bad');
+  aEl.textContent = `Accent on white: ${a.toFixed(1)}:1 ${a >= 4.5 ? '\u2713 readable' : '\u2717 too light for links and text. Pick a darker accent.'}`;
+  document.getElementById('saveSettingsBtn').disabled = a < 4.5 || m < 4.5;
+}
+
+function onColorInput() {
+  applyTheme(document.getElementById('sMain').value, document.getElementById('sAccent').value);
+  updateContrastNotes();
+}
+document.getElementById('sMain').addEventListener('input', onColorInput);
+document.getElementById('sAccent').addEventListener('input', onColorInput);
+document.getElementById('presetRow').innerHTML = COLOR_PRESETS.map((p, i) =>
+  `<button type="button" class="preset" data-i="${i}"><i style="background:${p.main}"></i><i style="background:${p.accent}"></i>${p.name}</button>`).join('');
+document.querySelectorAll('.preset').forEach(btn => btn.addEventListener('click', () => {
+  const p = COLOR_PRESETS[btn.dataset.i];
+  document.getElementById('sMain').value = p.main.toLowerCase();
+  document.getElementById('sAccent').value = p.accent.toLowerCase();
+  onColorInput();
+}));
+
+function companyName() { return publicSettings.company_name || 'Wrangla'; }
+
+function brandMarkHtml() {
+  if (publicSettings.has_logo) {
+    return `<img class="brand-logo" src="/api/logo?v=${encodeURIComponent(publicSettings.logo_version || '')}" alt="${escapeHtml(companyName())}">`;
+  }
+  return `<span class="brand-fallback"><span class="w-mark"></span><span>${escapeHtml(companyName())}</span></span>`;
+}
+
+function applyBranding() {
+  document.title = companyName();
+  document.getElementById('appHeader').innerHTML = brandMarkHtml();
+  document.getElementById('loginBrand').innerHTML = brandMarkHtml();
+}
+
+function printHeaderHtml() {
+  const c = companySettings || {};
+  const lines = [c.company_address, [c.company_phone, c.company_email].filter(Boolean).join(' \u00b7 '), c.company_reg ? 'ABN / Reg: ' + c.company_reg : '']
+    .filter(Boolean).map(escapeHtml).join('<br>');
+  return `<div class="print-brand">${brandMarkHtml()}<div class="print-company"><strong>${escapeHtml(companyName())}</strong>${lines ? '<br>' + lines : ''}</div></div>`;
+}
+
+function fillSettingsForm() {
+  const c = companySettings;
+  document.getElementById('sName').value = c.company_name || '';
+  document.getElementById('sAddress').value = c.company_address || '';
+  document.getElementById('sPhone').value = c.company_phone || '';
+  document.getElementById('sEmail').value = c.company_email || '';
+  document.getElementById('sReg').value = c.company_reg || '';
+  document.getElementById('sSkipWeekends').checked = !!c.skip_weekends;
+  document.getElementById('sTwofa').checked = c.twofa_enabled !== false;
+  document.getElementById('sTwofa').disabled = !c.resend_configured;
+  document.getElementById('twofaStatus').textContent = c.resend_configured
+    ? (c.twofa_enabled !== false
+        ? 'On. After the password, people get a code by email. A login lasts 30 days, so the code is needed about once a month.'
+        : 'Off. Anyone with a password can log in without a code.')
+    : 'Not available: no email service is set up. Add the RESEND_API_KEY secret to turn this on (see the README).';
+  document.getElementById('sMain').value = (c.main_color || DEFAULT_MAIN).toLowerCase();
+  document.getElementById('sAccent').value = (c.accent_color || DEFAULT_ACCENT).toLowerCase();
+  applyTheme(document.getElementById('sMain').value, document.getElementById('sAccent').value);
+  updateContrastNotes();
+  document.getElementById('logoPreview').innerHTML = brandMarkHtml();
+  document.getElementById('removeLogoBtn').style.display = publicSettings.has_logo ? 'inline-block' : 'none';
+  document.getElementById('settingsSaved').textContent = '';
+}
+
+async function refreshSettings() {
+  publicSettings = await api('/public-settings');
+  companySettings = await api('/settings');
+  applyTheme(publicSettings.main_color, publicSettings.accent_color);
+  applyBranding();
+  fillSettingsForm();
+}
+
+document.getElementById('settingsForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try {
+    await api('/settings', { method: 'PUT', body: JSON.stringify({
+      company_name: document.getElementById('sName').value,
+      company_address: document.getElementById('sAddress').value,
+      company_phone: document.getElementById('sPhone').value,
+      company_email: document.getElementById('sEmail').value,
+      company_reg: document.getElementById('sReg').value,
+      main_color: document.getElementById('sMain').value,
+      accent_color: document.getElementById('sAccent').value,
+      skip_weekends: document.getElementById('sSkipWeekends').checked,
+      ...(companySettings.resend_configured ? { twofa_enabled: document.getElementById('sTwofa').checked } : {}),
+      setup_complete: true,
+    })});
+    await refreshSettings();
+    document.getElementById('welcomeBanner').style.display = 'none';
+    document.getElementById('skipSetupBtn').style.display = 'none';
+    document.getElementById('settingsSaved').textContent = 'Saved.';
+  } catch (err) { alert(err.message); }
+});
+
+document.getElementById('skipSetupBtn').addEventListener('click', async () => {
+  await api('/settings', { method: 'PUT', body: JSON.stringify({ setup_complete: true }) });
+  companySettings.setup_complete = true;
+  document.getElementById('welcomeBanner').style.display = 'none';
+  document.getElementById('skipSetupBtn').style.display = 'none';
+  showView('calendar');
+});
+
+document.getElementById('uploadLogoBtn').addEventListener('click', async () => {
+  const input = document.getElementById('sLogoFile');
+  if (!input.files.length) { alert('Choose an image first'); return; }
+  const fd = new FormData();
+  fd.append('file', input.files[0]);
+  try {
+    await apiUpload('/settings/logo', fd);
+    input.value = '';
+    await refreshSettings();
+  } catch (err) { alert(err.message); }
+});
+
+document.getElementById('removeLogoBtn').addEventListener('click', async () => {
+  if (!confirm('Remove the logo?')) return;
+  await api('/settings/logo', { method: 'DELETE' });
+  await refreshSettings();
+});
+
+function populateSelects() {
+  const clientSel = document.getElementById('fClient');
+  clientSel.innerHTML = '<option value="">None</option>' + clients.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  const assignedSel = document.getElementById('fAssigned');
+  assignedSel.innerHTML = (me.role === 'admin' ? '<option value="">Unassigned</option>' : '') +
+    users.filter(u=>u.active).map(u => `<option value="${u.id}">${escapeHtml(u.name)}</option>`).join('');
+  document.getElementById('assignRow').style.display = me.role === 'admin' ? 'block' : 'none';
+  if (me.role !== 'admin') assignedSel.value = me.id;
+
+  const filterSel = document.getElementById('workerFilter');
+  filterSel.innerHTML = '<option value="">Everyone</option>' + users.filter(u=>u.active).map(u => `<option value="${u.id}">${escapeHtml(u.name)}</option>`).join('');
+
+  const reportFilterSel = document.getElementById('reportWorkerFilter');
+  reportFilterSel.innerHTML = '<option value="">Everyone</option>' + users.filter(u=>u.active).map(u => `<option value="${u.id}">${escapeHtml(u.name)}</option>`).join('');
+  const reportClientSel = document.getElementById('reportClientFilter');
+  reportClientSel.innerHTML = '<option value="">All clients</option>' + clients.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+}
+
+function updateSiteOptions() {
+  const clientId = document.getElementById('fClient').value;
+  const relevant = clientId ? sites.filter(s => String(s.client_id) === String(clientId)) : [];
+  const sel = document.getElementById('fSite');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">One-off address (not saved to this client)</option>' +
+    relevant.map(s => `<option value="${s.id}">${escapeHtml(s.name)} \u2014 ${escapeHtml(s.address)}</option>`).join('');
+  if (relevant.some(s => String(s.id) === current)) sel.value = current;
+}
+
+async function refreshJobTypes() {
+  const types = await api('/job-types');
+  document.getElementById('jobTypeOptions').innerHTML = types.map(t => `<option value="${escapeHtml(t)}"></option>`).join('');
+}
+
+function escapeHtml(s) { return (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+// ---------- nav ----------
+
+function showView(view) {
+  document.querySelectorAll('button.navlink').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+  ['calendar','clients','team','reports','settings'].forEach(v => {
+    document.getElementById('view-' + v).style.display = (v === view) ? 'block' : 'none';
+  });
+  if (view === 'reports') runReport();
+  if (view === 'settings') fillSettingsForm();
+  else applyTheme(publicSettings.main_color, publicSettings.accent_color); // drops any unsaved colour preview
+}
+document.querySelectorAll('button.navlink').forEach(btn => {
+  btn.addEventListener('click', () => showView(btn.dataset.view));
+});
+
+// ---------- calendar ----------
+
+let viewMode = 'week';
+let monthStart = startOfMonth(new Date());
+function startOfMonth(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
+function addMonths(d, n) { return new Date(d.getFullYear(), d.getMonth() + n, 1); }
+
+document.getElementById('viewMode').addEventListener('change', (e) => {
+  viewMode = e.target.value;
+  document.getElementById('weekGrid').style.display = viewMode === 'week' ? 'grid' : 'none';
+  document.getElementById('monthGrid').style.display = viewMode === 'month' ? 'grid' : 'none';
+  document.getElementById('monthHeader').style.display = viewMode === 'month' ? 'grid' : 'none';
+  renderCurrentView();
+});
+document.getElementById('prevPeriod').addEventListener('click', () => {
+  if (viewMode === 'week') weekStart = addDays(weekStart, -7); else monthStart = addMonths(monthStart, -1);
+  renderCurrentView();
+});
+document.getElementById('nextPeriod').addEventListener('click', () => {
+  if (viewMode === 'week') weekStart = addDays(weekStart, 7); else monthStart = addMonths(monthStart, 1);
+  renderCurrentView();
+});
+document.getElementById('thisPeriod').addEventListener('click', () => {
+  weekStart = startOfWeek(new Date()); monthStart = startOfMonth(new Date());
+  renderCurrentView();
+});
+document.getElementById('workerFilter').addEventListener('change', renderCurrentView);
+document.getElementById('exportBtn').addEventListener('click', exportPdf);
+
+// Workers on a phone get a plain list of their own jobs instead of the calendar grid.
+const phoneQuery = window.matchMedia('(max-width: 760px)');
+function isMine(a) { return (a.people || []).some(p => p.id === me.id); }
+function isPhoneWorker() { return !!me && me.role !== 'admin' && phoneQuery.matches; }
+phoneQuery.addEventListener('change', () => { if (me) renderCurrentView(); });
+
+async function renderWorkerList() {
+  const from = new Date(), to = addDays(from, 30);
+  const items = (await api(`/appointments?start=${fmtDate(from)}&end=${fmtDate(to)}`)).filter(a => isMine(a));
+  const box = document.getElementById('workerList');
+  box.innerHTML = '<div class="topbar"><h2>My jobs</h2></div>';
+  let any = false;
+  for (let i = 0; i <= 30; i++) {
+    const d = addDays(from, i), dStr = fmtDate(d);
+    const dayItems = itemsOn(items, dStr);
+    if (!dayItems.length) continue;
+    any = true;
+    const h = document.createElement('h3');
+    h.className = 'list-day';
+    h.textContent = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : dayLabel(d);
+    box.appendChild(h);
+    dayItems.forEach(a => box.appendChild(renderCard(a, dStr)));
+  }
+  if (!any) box.insertAdjacentHTML('beforeend', '<p style="color:var(--muted);">Nothing scheduled for you in the next 30 days.</p>');
+}
+
+async function renderCurrentView() {
+  const phone = isPhoneWorker();
+  document.getElementById('view-calendar').classList.toggle('phone-list', phone);
+  if (phone) { await renderWorkerList(); return; }
+  await (viewMode === 'week' ? renderWeek() : renderMonth());
+  renderUtilization();
+}
+
+// ---- helpers for items that span several days and have per-day hours ----
+
+function itemsOn(items, dStr) { return items.filter(a => a.dates.includes(dStr)); }
+function dayIndex(a, dStr) { return a.dates.indexOf(dStr); }
+function entriesOn(a, dStr) { return (a.entries || []).filter(e => e.work_date === dStr); }
+function loggedOn(a, dStr) { return entriesOn(a, dStr).reduce((t, e) => t + e.minutes, 0); }
+// The estimate is spread across the item's days (any leftover minutes go to the first days).
+function dayEstimate(a, dStr) {
+  const i = dayIndex(a, dStr);
+  if (!a.estimate_minutes || i < 0) return 0;
+  const n = a.dates.length;
+  return Math.floor(a.estimate_minutes / n) + (i < a.estimate_minutes % n ? 1 : 0);
+}
+function itemColor(a) { return a.assigned_color || '#B24A3D'; }
+function dayTagHtml(a, dStr) {
+  const i = dayIndex(a, dStr);
+  if (a.dates.length < 2 || i < 0) return '';
+  const c = itemColor(a);
+  return `<span class="day-tag" style="background:${c}; color:${readableOn(c)}">Day ${i + 1} of ${a.dates.length}</span>`;
+}
+function dayTagText(a, dStr) {
+  const i = dayIndex(a, dStr);
+  return (a.dates.length > 1 && i >= 0) ? `Day ${i + 1} of ${a.dates.length}` : '';
+}
+function locationText(a) {
+  return a.activity_type === 'task' ? 'Task'
+    : (a.location_type === 'project_site' ? (a.site_name || a.site_address || 'Job site') : 'Head office');
+}
+function loggedTimeText(e) { return e && e.start_time ? `${e.start_time} \u2013 ${e.end_time || ''}` : ''; }
+
+let lastRenderedRange = { start: '', end: '' };
+
+// ---- drag an item to another day (admins only) ----
+// Dropping moves the item's start date by the number of days between where it was picked up and where
+// it landed, so a multi-day item moves as a whole block.
+
+function parseLocalDate(iso) { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d); }
+function daysBetween(fromIso, toIso) { return Math.round((parseLocalDate(toIso) - parseLocalDate(fromIso)) / 86400000); }
+
+function makeDraggable(el, a, dStr) {
+  if (me.role !== 'admin') return;
+  el.draggable = true;
+  el.addEventListener('dragstart', (e) => {
+    e.dataTransfer.setData('text/plain', JSON.stringify({ id: a.id, date: dStr }));
+    e.dataTransfer.effectAllowed = 'move';
+    el.classList.add('dragging');
+  });
+  el.addEventListener('dragend', () => el.classList.remove('dragging'));
+}
+
+function makeDropZone(el, dStr) {
+  if (me.role !== 'admin') return;
+  el.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; el.classList.add('drop-target'); });
+  el.addEventListener('dragleave', (e) => { if (!el.contains(e.relatedTarget)) el.classList.remove('drop-target'); });
+  el.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    el.classList.remove('drop-target');
+    let info;
+    try { info = JSON.parse(e.dataTransfer.getData('text/plain')); } catch { return; }
+    await moveItemToDay(info.id, info.date, dStr);
+  });
+}
+
+async function moveItemToDay(id, fromDate, toDate) {
+  const a = lastRenderedItems.find(x => x.id === id);
+  const delta = daysBetween(fromDate, toDate);
+  if (!a || !delta) return;
+  const field = a.scheduled_date ? 'scheduled_date' : 'due_date';
+  const newStart = fmtDate(addDays(parseLocalDate(a[field]), delta));
+  try {
+    await api(`/appointments/${id}`, { method: 'PUT', body: JSON.stringify({ [field]: newStart }) });
+  } catch (err) { alert(err.message); }
+  await renderCurrentView();
+}
+
+async function renderWeek() {
+  const end = addDays(weekStart, 6);
+  document.getElementById('weekLabel').textContent = dayLabel(weekStart) + ' \u2013 ' + dayLabel(end);
+
+  const filter = document.getElementById('workerFilter').value;
+  let url = `/appointments?start=${fmtDate(weekStart)}&end=${fmtDate(end)}`;
+  if (filter) url += `&assigned_to=${filter}`;
+  const items = await api(url);
+  lastRenderedItems = items;
+  lastRenderedRange = { start: fmtDate(weekStart), end: fmtDate(end) };
+
+  const grid = document.getElementById('weekGrid');
+  grid.innerHTML = '';
+  const todayStr = fmtDate(new Date());
+
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(weekStart, i);
+    const dStr = fmtDate(d);
+    const col = document.createElement('div');
+    col.className = 'day-col' + (dStr === todayStr ? ' today' : '') + ((d.getDay() === 0 || d.getDay() === 6) ? ' weekend' : '');
+    col.dataset.date = dStr;
+    col.innerHTML = `<div class="day-head">${d.toLocaleDateString(undefined,{weekday:'long'})}<div class="dow">${d.toLocaleDateString(undefined,{day:'numeric', month:'short'})}</div></div>`;
+    itemsOn(items, dStr).forEach(a => col.appendChild(renderCard(a, dStr)));
+    makeDropZone(col, dStr);
+    grid.appendChild(col);
+  }
+}
+
+async function renderMonth() {
+  document.getElementById('weekLabel').textContent = monthStart.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+
+  const gridStart = startOfWeek(monthStart);
+  const gridEnd = addDays(gridStart, 41); // 6 weeks
+  const filter = document.getElementById('workerFilter').value;
+  let url = `/appointments?start=${fmtDate(gridStart)}&end=${fmtDate(gridEnd)}`;
+  if (filter) url += `&assigned_to=${filter}`;
+  const items = await api(url);
+  lastRenderedItems = items;
+  lastRenderedRange = { start: fmtDate(gridStart), end: fmtDate(gridEnd) };
+
+  const grid = document.getElementById('monthGrid');
+  grid.innerHTML = '';
+  const todayStr = fmtDate(new Date());
+  const thisMonth = monthStart.getMonth();
+
+  for (let i = 0; i < 42; i++) {
+    const d = addDays(gridStart, i);
+    const dStr = fmtDate(d);
+    const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+    const cell = document.createElement('div');
+    cell.className = 'month-cell' + (d.getMonth() !== thisMonth ? ' outside' : '') + (dStr === todayStr ? ' today' : '') + (isWeekend ? ' weekend' : '');
+    cell.dataset.date = dStr;
+    cell.innerHTML = `<div class="date-num">${d.getDate()}</div>`;
+    const dayItems = itemsOn(items, dStr);
+
+    const goToDay = () => {
+      weekStart = startOfWeek(d);
+      document.getElementById('viewMode').value = 'week';
+      viewMode = 'week';
+      document.getElementById('weekGrid').style.display = 'grid';
+      document.getElementById('monthGrid').style.display = 'none';
+      document.getElementById('monthHeader').style.display = 'none';
+      renderWeek();
+    };
+
+    makeDropZone(cell, dStr);
+    if (isWeekend) {
+      if (dayItems.length) {
+        const badge = document.createElement('button');
+        badge.className = 'weekend-badge';
+        badge.textContent = dayItems.length;
+        badge.addEventListener('click', goToDay);
+        cell.appendChild(badge);
+      }
+      grid.appendChild(cell);
+      continue;
+    }
+
+    dayItems.slice(0, 3).forEach(a => {
+      const chip = document.createElement('div');
+      chip.className = 'month-chip' + (a.location_type === 'project_site' ? ' site' : '') + (a.status === 'completed' ? ' completed' : '') + (!a.assigned_to ? ' unassigned' : '');
+      if (a.dates.length > 1) chip.style.borderLeftColor = itemColor(a);
+      const heading = `${a.title} \u2013 ${a.client_nickname || a.client_name || ''}`.replace(/ \u2013 $/, '');
+      const personDot = a.assigned_color ? `<span class="who-dot" style="background:${a.assigned_color}; width:6px; height:6px;"></span>` : '';
+      const siteBit = a.activity_type === 'task' ? '' :
+        (a.location_type === 'project_site'
+          ? (a.site_name ? ' \u00b7 ' + escapeHtml(a.site_name) : '')
+          : ' \u00b7 Office');
+      const whoBit = a.assigned_to ? escapeHtml(a.assigned_name||'') : `<strong style="color:var(--danger)">Unassigned</strong>`;
+      const dayEst = dayEstimate(a, dStr), actualMins = loggedOn(a, dStr);
+      const overBudget = dayEst && actualMins > dayEst;
+      const estRow = a.estimate_minutes
+        ? `<div class="chip-est"><span class="est-badge">E${hoursShort(dayEst)}</span>${actualMins ? `<span class="est-badge${overBudget ? ' over' : ''}">R${hoursShort(actualMins)}</span>` : ''}</div>`
+        : '';
+      chip.innerHTML = `<div class="chip-title">${dayTagHtml(a, dStr)}${escapeHtml(heading)}</div><div class="chip-meta">${personDot}${whoBit}${siteBit}</div>${estRow}`;
+      chip.addEventListener('click', () => openActivityModal(a));
+      makeDraggable(chip, a, dStr);
+      cell.appendChild(chip);
+    });
+    if (dayItems.length > 3) {
+      const more = document.createElement('button');
+      more.className = 'month-more';
+      more.textContent = `+${dayItems.length - 3} more`;
+      more.addEventListener('click', goToDay);
+      cell.appendChild(more);
+    }
+    grid.appendChild(cell);
+  }
+}
+
+let lastRenderedItems = [];
+function exportPdf() {
+  const rangeLabel = document.getElementById('weekLabel').textContent;
+  const { start, end } = lastRenderedRange;
+  const rows = [];
+  lastRenderedItems.forEach(a => a.dates.filter(d => d >= start && d <= end).forEach(d => rows.push({ a, date: d })));
+  rows.sort((x, y) => x.date.localeCompare(y.date));
+  const html = `
+    ${printHeaderHtml()}
+    <h1>Schedule \u2014 ${escapeHtml(rangeLabel)}</h1>
+    <div class="print-sub">Exported ${new Date().toLocaleString()}</div>
+    <table>
+      <thead><tr><th>Date</th><th>Title</th><th>Type of work</th><th>Client</th><th>Assigned to</th><th>Location</th><th>Time logged</th></tr></thead>
+      <tbody>
+        ${rows.map(({ a, date }) => `<tr>
+          <td>${escapeHtml(date)}</td>
+          <td>${escapeHtml(a.title)}${dayTagText(a, date) ? ' (' + dayTagText(a, date) + ')' : ''}</td>
+          <td>${escapeHtml(a.job_type||'')}</td>
+          <td>${escapeHtml(a.client_name||'')}</td>
+          <td>${escapeHtml(a.assigned_name||'')}</td>
+          <td>${escapeHtml(locationText(a))}</td>
+          <td>${escapeHtml(entriesOn(a, date).map(loggedTimeText).filter(Boolean).join(', '))}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+  document.getElementById('printArea').innerHTML = html;
+  window.print();
+}
+
+// ---------- reports ----------
+
+const REPORT_COLGROUP = `<colgroup><col class="col-date"><col class="col-job"><col class="col-type"><col class="col-client"><col class="col-location"><col class="col-time"><col class="col-estimate"><col class="col-duration"></colgroup>`;
+
+function minutesBetween(start, end) {
+  if (!start || !end) return 0;
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  return Math.max(0, (eh * 60 + em) - (sh * 60 + sm));
+}
+function formatMinutes(mins) {
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return h ? `${h}h ${m}m` : `${m}m`;
+}
+function hoursShort(mins) {
+  const h = mins / 60;
+  return (h % 1 === 0) ? String(h) : h.toFixed(1);
+}
+
+let lastReportGroups = [];
+let lastReportClientName = '';
+
+// One report row per item per day, grouped by the person who did (or is meant to do) the work.
+function buildReportGroups(items, start, end, clientFilter) {
+  const groups = {};
+  const ensure = (id, name) => (groups[id] ||= { name, rows: [], totalMinutes: 0, totalEstimate: 0 });
+  items.forEach(a => {
+    if (clientFilter && String(a.client_id) !== clientFilter) return;
+    const days = new Set(a.dates.filter(d => d >= start && d <= end));
+    (a.entries || []).forEach(e => { if (e.work_date >= start && e.work_date <= end) days.add(e.work_date); });
+    [...days].sort().forEach(d => {
+      const est = dayEstimate(a, d);
+      const es = entriesOn(a, d);
+      if (es.length) {
+        es.forEach(e => {
+          const g = ensure(e.user_id, e.user_name);
+          g.rows.push({ a, date: d, entry: e, est });
+          g.totalMinutes += e.minutes; g.totalEstimate += est;
+        });
+      } else {
+        const g = ensure(a.assigned_to || 'none', a.assigned_name || 'Unassigned');
+        g.rows.push({ a, date: d, entry: null, est });
+        g.totalEstimate += est;
+      }
+    });
+  });
+  return Object.values(groups).sort((x, y) => x.name.localeCompare(y.name));
+}
+
+function reportRowHtml(r, forPrint) {
+  const { a, date, entry, est } = r;
+  const tag = dayTagText(a, date);
+  const timeText = entry && entry.start_time ? loggedTimeText(entry)
+    : (forPrint ? '' : (a.status === 'completed' ? 'Completed, no time logged' : 'Not logged'));
+  return `<tr>
+    <td>${escapeHtml(date)}</td>
+    <td>${escapeHtml(a.title)}${tag ? ' (' + tag + ')' : ''}</td>
+    <td>${escapeHtml(a.job_type||'')}</td>
+    <td>${escapeHtml(a.client_name||'')}</td>
+    <td>${escapeHtml(locationText(a))}</td>
+    <td>${escapeHtml(timeText)}</td>
+    <td>${est ? formatMinutes(est) : ''}</td>
+    <td>${entry && entry.minutes ? formatMinutes(entry.minutes) : ''}</td>
+  </tr>`;
+}
+
+function reportHeading(group) {
+  const pct = group.totalEstimate ? Math.round(group.totalMinutes / group.totalEstimate * 100) : null;
+  return `${escapeHtml(group.name)} \u2014 ${formatMinutes(group.totalMinutes)} logged${group.totalEstimate ? ` \u00b7 ${formatMinutes(group.totalEstimate)} estimated${pct !== null ? ' (' + pct + '%)' : ''}` : ''}`;
+}
+
+async function runReport() {
+  const start = document.getElementById('reportStart').value;
+  const end = document.getElementById('reportEnd').value;
+  const filter = document.getElementById('reportWorkerFilter').value;
+  const clientFilter = document.getElementById('reportClientFilter').value;
+  if (!start || !end) { alert('Pick a start and end date'); return; }
+
+  let url = `/appointments?start=${start}&end=${end}`;
+  if (filter) url += `&assigned_to=${filter}`;
+  let items = await api(url);
+  if (me.role !== 'admin') items = items.filter(isMine); // workers report on their own work only
+
+  lastReportGroups = buildReportGroups(items, start, end, clientFilter);
+  lastReportClientName = clientFilter ? (clients.find(c => String(c.id) === clientFilter)||{}).name : '';
+
+  const output = document.getElementById('reportOutput');
+  if (!lastReportGroups.length) {
+    output.innerHTML = `<p style="color:var(--muted);">Nothing in that date range${lastReportClientName ? ' for ' + escapeHtml(lastReportClientName) : ''}.</p>`;
+    renderUtilization();
+    return;
+  }
+  output.innerHTML = (lastReportClientName ? `<p style="color:var(--ink-soft); margin-bottom:10px;">Showing work for <strong>${escapeHtml(lastReportClientName)}</strong></p>` : '') + lastReportGroups.map(group => `
+    <h3 style="margin:20px 0 8px;">${reportHeading(group)}</h3>
+    <table class="admin-table report-table">
+      ${REPORT_COLGROUP}
+      <thead><tr><th>Date</th><th>Job</th><th>Type of work</th><th>Client</th><th>Location</th><th>Time</th><th>Estimated</th><th>Duration</th></tr></thead>
+      <tbody>${group.rows.map(r => reportRowHtml(r, false)).join('')}</tbody>
+    </table>`).join('');
+  renderUtilization();
+}
+
+function computeUtilizationRows(byPerson) {
+  const rows = Object.entries(byPerson).sort((a, b) => a[1].name.localeCompare(b[1].name));
+  const pctOrDash = (act, est) => est ? Math.round(act / est * 100) + '%' : '\u2014';
+  const rowsHtml = rows.length
+    ? rows.map(([id, r]) => `<tr>
+        <td>${escapeHtml(r.name)}</td>
+        <td>${formatMinutes(r.weekEst)}</td>
+        <td>${formatMinutes(r.weekAct)}</td>
+        <td>${pctOrDash(r.weekAct, r.weekEst)}</td>
+        <td>${formatMinutes(r.monthEst)}</td>
+        <td>${formatMinutes(r.monthAct)}</td>
+        <td>${pctOrDash(r.monthAct, r.monthEst)}</td>
+      </tr>`).join('')
+    : `<tr><td colspan="7" style="color:var(--muted);">No estimated or logged time yet.</td></tr>`;
+  function highlightHtml(personId) {
+    const r = byPerson[personId];
+    if (!r) return '';
+    return `
+      <div style="background:var(--office-bg); border-radius:6px; padding:12px 16px; margin-bottom:14px; font-size:13.5px;">
+        <strong>${escapeHtml(r.name)}</strong> \u2014 week: ${formatMinutes(r.weekAct)} logged of ${formatMinutes(r.weekEst)} estimated${r.weekEst ? ' (' + pctOrDash(r.weekAct, r.weekEst) + ')' : ''}.
+        Month: ${formatMinutes(r.monthAct)} logged of ${formatMinutes(r.monthEst)} estimated${r.monthEst ? ' (' + pctOrDash(r.monthAct, r.monthEst) + ')' : ''}.
+      </div>`;
+  }
+  return { byPerson, rowsHtml, highlightHtml };
+}
+
+// Estimates come from the days an item occupies, hours from time entries (one row per person per day).
+async function fetchUtilizationData(referenceDate) {
+  const wStart = startOfWeek(referenceDate), wEnd = addDays(wStart, 6);
+  const mStart = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1);
+  const mEnd = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 0);
+  const [weekItems, monthItems] = await Promise.all([
+    api(`/appointments?start=${fmtDate(wStart)}&end=${fmtDate(wEnd)}`),
+    api(`/appointments?start=${fmtDate(mStart)}&end=${fmtDate(mEnd)}`),
+  ]);
+  const byPerson = {};
+  const person = (id, name) => (byPerson[id] ||= { name, weekEst: 0, weekAct: 0, monthEst: 0, monthAct: 0 });
+  function tally(items, from, to, prefix) {
+    items.forEach(a => {
+      if (a.assigned_to) {
+        const p = person(a.assigned_to, a.assigned_name);
+        a.dates.forEach(d => { if (d >= from && d <= to) p[prefix + 'Est'] += dayEstimate(a, d); });
+      }
+      (a.entries || []).forEach(e => {
+        if (e.work_date >= from && e.work_date <= to) person(e.user_id, e.user_name)[prefix + 'Act'] += e.minutes;
+      });
+    });
+  }
+  tally(weekItems, fmtDate(wStart), fmtDate(wEnd), 'week');
+  tally(monthItems, fmtDate(mStart), fmtDate(mEnd), 'month');
+  return computeUtilizationRows(byPerson);
+}
+
+async function renderUtilization() {
+  // Reports panel: always a stable "right now" snapshot, independent of calendar browsing.
+  const reportBody = document.getElementById('utilizationBody');
+  if (reportBody) {
+    const result = await fetchUtilizationData(new Date());
+    reportBody.innerHTML = result.rowsHtml;
+    const filter = document.getElementById('reportWorkerFilter') ? document.getElementById('reportWorkerFilter').value : '';
+    document.getElementById('utilizationHighlight').innerHTML = result.highlightHtml(me.role === 'admin' ? filter : String(me.id));
+  }
+
+  // Calendar panel: follows whichever week/month is currently on screen.
+  const calBody = document.getElementById('calUtilizationBody');
+  if (calBody) {
+    const referenceDate = viewMode === 'week' ? weekStart : monthStart;
+    const result = await fetchUtilizationData(referenceDate);
+    document.getElementById('calUtilizationLabel').textContent =
+      `Week of ${dayLabel(startOfWeek(referenceDate))} \u00b7 ${new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}`;
+    calBody.innerHTML = result.rowsHtml;
+    const filter = document.getElementById('workerFilter') ? document.getElementById('workerFilter').value : '';
+    document.getElementById('calUtilizationHighlight').innerHTML = result.highlightHtml(me.role === 'admin' ? filter : String(me.id));
+  }
+}
+
+function exportReportPdf() {
+  const start = document.getElementById('reportStart').value;
+  const end = document.getElementById('reportEnd').value;
+  const html = `
+    ${printHeaderHtml()}
+    <h1>Time report \u2014 ${escapeHtml(start)} to ${escapeHtml(end)}${lastReportClientName ? ' \u2014 ' + escapeHtml(lastReportClientName) : ''}</h1>
+    <div class="print-sub">Exported ${new Date().toLocaleString()}</div>
+    ${lastReportGroups.map(group => `
+      <h3>${reportHeading(group)}</h3>
+      <table class="report-table">
+        ${REPORT_COLGROUP}
+        <thead><tr><th>Date</th><th>Job</th><th>Type of work</th><th>Client</th><th>Location</th><th>Time</th><th>Estimated</th><th>Duration</th></tr></thead>
+        <tbody>${group.rows.map(r => reportRowHtml(r, true)).join('')}</tbody>
+      </table>`).join('')}`;
+  document.getElementById('printArea').innerHTML = html;
+  window.print();
+}
+
+document.getElementById('runReportBtn').addEventListener('click', runReport);
+document.getElementById('reportWorkerFilter').addEventListener('change', renderUtilization);
+document.getElementById('exportReportBtn').addEventListener('click', () => { if (!lastReportGroups.length) runReport().then(exportReportPdf); else exportReportPdf(); });
+
+function renderCard(a, dStr) {
+  const el = document.createElement('div');
+  el.className = 'card' + (a.location_type === 'project_site' ? ' site' : '') + (a.status === 'completed' ? ' completed' : '') + (!a.assigned_to ? ' unassigned' : '');
+  if (a.dates.length > 1) el.style.borderLeftColor = itemColor(a);
+  const entry = entriesOn(a, dStr)[0];
+  const timeStr = entry && entry.start_time
+    ? loggedTimeText(entry) + ' logged'
+    : (a.activity_type === 'task' ? 'Due' : 'Not started');
+  const siteLabel = a.site_name ? `${a.site_name} \u2014 ${a.site_full_address}` : (a.site_address || 'Job site');
+  const officeLabel = a.client_address ? `Head office \u2014 ${a.client_address}` : 'Head office';
+  const siteContact = a.site_contact_name || a.site_phone
+    ? `<div class="meta">${escapeHtml(a.site_contact_name||'')}${a.site_contact_name && a.site_phone ? ' \u00b7 ' : ''}${escapeHtml(a.site_phone||'')}</div>` : '';
+  const locPill = a.activity_type === 'task'
+    ? ''
+    : `<span class="pill ${a.location_type === 'project_site' ? 'site' : 'office'}">${a.location_type === 'project_site' ? siteLabel : officeLabel}</span>`;
+  const donePill = a.status === 'completed' ? `<span class="pill done">Completed</span>` : '';
+  const unassignedPill = !a.assigned_to ? `<span class="pill" style="background:#FBEEEC; color:var(--danger);">Unassigned</span>` : '';
+  const dayEst = dayEstimate(a, dStr), logged = loggedOn(a, dStr);
+  const estimateLine = a.estimate_minutes
+    ? `<div class="meta">Est ${formatMinutes(dayEst)}${a.dates.length > 1 ? ' today (' + formatMinutes(a.estimate_minutes) + ' total)' : ''}${logged ? ' \u00b7 Actual ' + formatMinutes(logged) : ''}</div>`
+    : '';
+  el.innerHTML = `
+    <div class="time">${dayTagHtml(a, dStr)}${timeStr}</div>
+    <div class="title">${escapeHtml(a.title)}${a.job_type ? ` <span style="font-weight:400; color:var(--ink-soft); font-size:12px;">\u00b7 ${escapeHtml(a.job_type)}</span>` : ''}</div>
+    <div class="meta">
+      ${a.assigned_to && me.role === 'admin' ? `<span class="who-dot" style="background:${a.assigned_color||'#999'}"></span>${escapeHtml(a.assigned_name||'')}` : ''}
+      ${a.client_name ? ((a.assigned_to && me.role === 'admin') ? ' \u00b7 ' : '') + escapeHtml(a.client_name) : ''}
+    </div>
+    ${estimateLine}
+    ${locPill} ${donePill} ${unassignedPill}
+    ${a.location_type === 'project_site' ? siteContact : ''}
+  `;
+  el.addEventListener('click', () => openActivityModal(a));
+  makeDraggable(el, a, dStr);
+  return el;
+}
+
+// ---------- activity modal ----------
+
+const activityOverlay = document.getElementById('activityOverlay');
+document.getElementById('newActivityBtn').addEventListener('click', () => openActivityModal(null));
+document.getElementById('cancelActivityBtn').addEventListener('click', () => activityOverlay.classList.remove('shown'));
+
+document.getElementById('fType').addEventListener('change', updateTypeFields);
+document.getElementById('fLocation').addEventListener('change', updateLocationFields);
+document.getElementById('fClient').addEventListener('change', updateSiteOptions);
+function updateTypeFields() {
+  const isTask = document.getElementById('fType').value === 'task';
+  document.getElementById('apptFields').style.display = isTask ? 'none' : 'block';
+  document.getElementById('taskFields').style.display = isTask ? 'block' : 'none';
+}
+function updateLocationFields() {
+  const isSite = document.getElementById('fLocation').value === 'project_site';
+  document.getElementById('siteRow').style.display = isSite ? 'block' : 'none';
+  document.getElementById('siteAddressRow').style.display = isSite ? 'flex' : 'none';
+  if (isSite) updateSiteOptions();
+}
+
+document.getElementById('fRepeats').addEventListener('change', (e) => {
+  document.getElementById('recurrenceFields').style.display = e.target.checked ? 'block' : 'none';
+});
+document.getElementById('fFrequency').addEventListener('change', updateMonthlyModeVisibility);
+function updateMonthlyModeVisibility() {
+  document.getElementById('monthlyModeRow').style.display = document.getElementById('fFrequency').value === 'monthly' ? 'block' : 'none';
+}
+
+function openActivityModal(a) {
+  editingActivityId = a ? a.id : null;
+  editingActivityStatus = a ? a.status : null;
+  editingActivitySeriesId = a ? a.series_id : null;
+  document.getElementById('activityModalTitle').textContent = a ? 'Edit activity' : 'New activity';
+  document.getElementById('fTitle').value = a ? a.title : '';
+  document.getElementById('fType').value = a ? a.activity_type : 'appointment';
+  document.getElementById('fClient').value = a && a.client_id ? a.client_id : '';
+  document.getElementById('fJobType').value = a ? (a.job_type || '') : '';
+  document.getElementById('fEstimate').value = a && a.estimate_minutes ? (a.estimate_minutes / 60) : '';
+  document.getElementById('fDays').value = a ? (a.days || 1) : 1;
+  document.getElementById('fAssigned').value = a ? (a.assigned_to || '') : me.id;
+  document.getElementById('fLocation').value = a ? a.location_type : 'head_office';
+  document.getElementById('fSiteAddress').value = a ? (a.site_address || '') : '';
+  document.getElementById('fDate').value = a ? (a.scheduled_date || '') : fmtDate(new Date());
+  document.getElementById('fDue').value = a ? (a.due_date || '') : '';
+  document.getElementById('fNotes').value = a ? (a.notes || '') : '';
+  updateTypeFields();
+  updateLocationFields();
+  if (a && a.site_id) document.getElementById('fSite').value = a.site_id;
+
+  document.getElementById('recurrenceSection').style.display = a ? 'none' : 'block';
+  document.getElementById('fRepeats').checked = false;
+  document.getElementById('recurrenceFields').style.display = 'none';
+  document.getElementById('fFrequency').value = 'weekly';
+  document.getElementById('fOccurrences').value = 12;
+  updateMonthlyModeVisibility();
+
+  const canEditFully = !a || me.role === 'admin';
+  ['fTitle','fType','fClient','fJobType','fEstimate','fDays','fAssigned','fLocation','fSite','fSiteAddress','fDate','fDue'].forEach(id => {
+    document.getElementById(id).disabled = !canEditFully;
+  });
+  document.getElementById('saveActivityBtn').style.display = canEditFully ? 'inline-block' : 'none';
+  document.getElementById('deleteActivityBtn').style.display = (a && me.role === 'admin') ? 'inline-block' : 'none';
+  document.getElementById('deleteSeriesBtn').style.display = (a && a.series_id && me.role === 'admin') ? 'inline-block' : 'none';
+
+  const canLogTime = a && (me.role === 'admin' || isMine(a));
+  document.getElementById('completeSection').style.display = canLogTime ? 'block' : 'none';
+  if (canLogTime) {
+    const alreadyDone = a.status === 'completed';
+    document.getElementById('completeSectionTitle').textContent = alreadyDone ? 'Update time and notes' : 'Log time and mark complete';
+    document.getElementById('markCompleteBtn').textContent = alreadyDone ? 'Save time and notes' : 'Mark complete';
+    renderTimeDays(a);
+  }
+
+  document.getElementById('attachmentsSection').style.display = a ? 'block' : 'none';
+  document.getElementById('commentsSection').style.display = a ? 'block' : 'none';
+  if (a) {
+    loadAttachments(a.id);
+    loadComments(a.id);
+  }
+
+  activityOverlay.classList.add('shown');
+}
+
+// One start/finish pair per day the item runs. Hours are saved per person per day.
+async function renderTimeDays(a) {
+  const box = document.getElementById('timeLogDays');
+  box.innerHTML = '';
+  const entries = await api(`/appointments/${a.id}/time`);
+  if (editingActivityId !== a.id) return; // modal moved on while loading
+  const personId = isMine(a) ? me.id : (a.assigned_to || me.id);
+  const multi = a.dates.length > 1;
+  a.dates.forEach((d, i) => {
+    const e = entries.find(x => x.work_date === d && x.user_id === personId) || {};
+    const [y, m, day] = d.split('-').map(Number);
+    const label = new Date(y, m - 1, day).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+    const row = document.createElement('div');
+    row.className = 'time-day';
+    row.dataset.date = d;
+    row.innerHTML = `${multi ? `<div class="time-day-label">${escapeHtml(label)} \u00b7 Day ${i + 1} of ${a.dates.length}</div>` : ''}
+      <div class="row2">
+        <div><label>Started</label><input type="time" class="te-start" value="${e.start_time || ''}"></div>
+        <div><label>Finished</label><input type="time" class="te-end" value="${e.end_time || ''}"></div>
+      </div>`;
+    box.appendChild(row);
+  });
+}
+
+async function loadComments(appointmentId) {
+  const list = document.getElementById('commentsList');
+  list.innerHTML = `<p style="color:var(--muted); font-size:12px;">Loading...</p>`;
+  const comments = await api(`/appointments/${appointmentId}/comments`);
+  list.innerHTML = comments.length
+    ? comments.map(c => `
+      <div class="comment-item">
+        <div class="comment-meta"><span class="who-dot" style="background:${c.user_color||'#999'}"></span>${escapeHtml(c.user_name)} \u00b7 ${formatTimestamp(c.created_at)}</div>
+        <div>${escapeHtml(c.comment)}</div>
+      </div>`).join('')
+    : `<p style="color:var(--muted); font-size:12px;">No notes yet.</p>`;
+}
+
+document.getElementById('postCommentBtn').addEventListener('click', async () => {
+  const text = document.getElementById('newCommentText').value.trim();
+  if (!text || !editingActivityId) return;
+  await api(`/appointments/${editingActivityId}/comments`, { method: 'POST', body: JSON.stringify({ comment: text }) });
+  document.getElementById('newCommentText').value = '';
+  loadComments(editingActivityId);
+});
+
+function formatFileSize(bytes) {
+  if (!bytes) return '';
+  if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+async function loadAttachments(appointmentId) {
+  const list = document.getElementById('attachmentsList');
+  list.innerHTML = `<p style="color:var(--muted); font-size:12px;">Loading...</p>`;
+  const files = await api(`/appointments/${appointmentId}/attachments`);
+  list.innerHTML = files.length
+    ? files.map(f => `
+      <div class="attachment-row">
+        <div>
+          <a href="/api/attachments/${f.id}/file" target="_blank" rel="noopener">${escapeHtml(f.filename)}</a>
+          <div class="attachment-meta">${escapeHtml(f.uploaded_by_name)} \u00b7 ${formatTimestamp(f.uploaded_at)} \u00b7 ${formatFileSize(f.size_bytes)}</div>
+        </div>
+        ${me.role === 'admin' ? `<button type="button" class="danger removeAttachmentBtn" data-id="${f.id}" style="padding:4px 8px;">Remove</button>` : ''}
+      </div>`).join('')
+    : `<p style="color:var(--muted); font-size:12px;">No files yet.</p>`;
+  document.querySelectorAll('.removeAttachmentBtn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await api(`/attachments/${btn.dataset.id}`, { method: 'DELETE' });
+      loadAttachments(appointmentId);
+    });
+  });
+}
+
+document.getElementById('uploadAttachmentBtn').addEventListener('click', async () => {
+  const fileInput = document.getElementById('newAttachmentFile');
+  if (!fileInput.files.length || !editingActivityId) { alert('Choose a file first'); return; }
+  const formData = new FormData();
+  formData.append('file', fileInput.files[0]);
+  const btn = document.getElementById('uploadAttachmentBtn');
+  btn.disabled = true; btn.textContent = 'Uploading...';
+  try {
+    await apiUpload(`/appointments/${editingActivityId}/attachments`, formData);
+    fileInput.value = '';
+    loadAttachments(editingActivityId);
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Upload';
+  }
+});
+
+document.getElementById('activityForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const repeats = !editingActivityId && document.getElementById('fRepeats').checked;
+  const payload = {
+    title: document.getElementById('fTitle').value,
+    activity_type: document.getElementById('fType').value,
+    client_id: document.getElementById('fClient').value || null,
+    job_type: document.getElementById('fJobType').value,
+    estimate_minutes: document.getElementById('fEstimate').value ? Math.round(parseFloat(document.getElementById('fEstimate').value) * 60) : null,
+    days: Math.max(1, Math.min(60, parseInt(document.getElementById('fDays').value, 10) || 1)),
+    site_id: document.getElementById('fSite').value || null,
+    assigned_to: document.getElementById('fAssigned').value || null,
+    location_type: document.getElementById('fLocation').value,
+    site_address: document.getElementById('fSiteAddress').value || null,
+    notes: document.getElementById('fNotes').value || null,
+  };
+  try {
+    if (repeats) {
+      const isTask = payload.activity_type === 'task';
+      payload.start_date = isTask ? document.getElementById('fDue').value : document.getElementById('fDate').value;
+      if (!payload.start_date) { alert(isTask ? 'Pick a due date to start from' : 'Pick a date to start from'); return; }
+      payload.frequency = document.getElementById('fFrequency').value;
+      payload.monthly_mode = document.getElementById('fMonthlyMode').value;
+      payload.occurrences = document.getElementById('fOccurrences').value;
+      const result = await api('/appointments/recurring', { method: 'POST', body: JSON.stringify(payload) });
+      alert(`Created ${result.count} occurrences.`);
+    } else {
+      payload.scheduled_date = document.getElementById('fDate').value || null;
+      payload.due_date = document.getElementById('fDue').value || null;
+      if (editingActivityId) {
+        await api(`/appointments/${editingActivityId}`, { method: 'PUT', body: JSON.stringify(payload) });
+      } else {
+        await api('/appointments', { method: 'POST', body: JSON.stringify(payload) });
+      }
+    }
+    activityOverlay.classList.remove('shown');
+    await refreshJobTypes();
+    await renderCurrentView();
+  } catch (err) { alert(err.message); }
+});
+
+document.getElementById('deleteSeriesBtn').addEventListener('click', async () => {
+  if (!editingActivitySeriesId) return;
+  if (!confirm('Delete this job and every future occurrence in this recurring series? Already-completed ones are kept.')) return;
+  await api(`/appointments/series/${editingActivitySeriesId}`, { method: 'DELETE' });
+  activityOverlay.classList.remove('shown');
+  await renderCurrentView();
+});
+
+document.getElementById('deleteActivityBtn').addEventListener('click', async () => {
+  if (!confirm('Delete this activity?')) return;
+  await api(`/appointments/${editingActivityId}`, { method: 'DELETE' });
+  activityOverlay.classList.remove('shown');
+  await renderCurrentView();
+});
+
+document.getElementById('markCompleteBtn').addEventListener('click', async () => {
+  try {
+    const entries = [...document.querySelectorAll('#timeLogDays .time-day')].map(row => ({
+      work_date: row.dataset.date,
+      start_time: row.querySelector('.te-start').value || null,
+      end_time: row.querySelector('.te-end').value || null,
+    }));
+    await api(`/appointments/${editingActivityId}/time`, { method: 'PUT', body: JSON.stringify({ entries }) });
+    const payload = { notes: document.getElementById('fNotes').value || null };
+    if (editingActivityStatus !== 'completed') payload.mark_complete = true;
+    await api(`/appointments/${editingActivityId}`, { method: 'PUT', body: JSON.stringify(payload) });
+    activityOverlay.classList.remove('shown');
+    await renderCurrentView();
+  } catch (err) { alert(err.message); }
+});
+
+// ---------- clients ----------
+
+const clientOverlay = document.getElementById('clientOverlay');
+document.getElementById('newClientBtn').addEventListener('click', () => openClientModal(null));
+document.getElementById('cancelClientBtn').addEventListener('click', () => clientOverlay.classList.remove('shown'));
+
+function openClientModal(c) {
+  editingClientId = c ? c.id : null;
+  document.getElementById('clientModalTitle').textContent = c ? 'Edit client' : 'New client';
+  document.getElementById('cName').value = c ? c.name : '';
+  document.getElementById('cNickname').value = c ? (c.nickname||'') : '';
+  document.getElementById('cAddress').value = c ? (c.address||'') : '';
+  document.getElementById('cContact').value = c ? (c.contact_name||'') : '';
+  document.getElementById('cPhone').value = c ? (c.phone||'') : '';
+  document.getElementById('cEmail').value = c ? (c.email||'') : '';
+  document.getElementById('cNotes').value = c ? (c.notes||'') : '';
+  document.getElementById('deleteClientBtn').style.display = c ? 'inline-block' : 'none';
+  document.getElementById('sitesSection').style.display = c ? 'block' : 'none';
+  resetSiteForm();
+  if (c) renderSitesList(c.id);
+  clientOverlay.classList.add('shown');
+}
+
+function renderSitesList(clientId) {
+  const relevant = sites.filter(s => s.client_id === clientId);
+  document.getElementById('sitesList').innerHTML = relevant.length
+    ? relevant.map(s => `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:13px;">
+        <div><strong>${escapeHtml(s.name)}</strong><br><span style="color:var(--muted)">${escapeHtml(s.address)}</span>${s.contact_name || s.phone ? `<br><span style="color:var(--muted)">${escapeHtml(s.contact_name||'')}${s.contact_name && s.phone ? ' \u00b7 ' : ''}${escapeHtml(s.phone||'')}</span>` : ''}</div>
+        <div style="display:flex; gap:6px; flex-shrink:0;">
+          <button type="button" class="editSiteBtn" data-id="${s.id}" style="padding:4px 8px;">Edit</button>
+          <button type="button" class="danger removeSiteBtn" data-id="${s.id}" style="padding:4px 8px;">Remove</button>
+        </div>
+      </div>`).join('')
+    : `<p style="color:var(--muted); font-size:13px;">No sites added yet.</p>`;
+  document.querySelectorAll('.removeSiteBtn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await api(`/sites/${btn.dataset.id}`, { method: 'DELETE' });
+      sites = await api('/sites');
+      if (editingSiteId === parseInt(btn.dataset.id)) resetSiteForm();
+      renderSitesList(clientId);
+    });
+  });
+  document.querySelectorAll('.editSiteBtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const site = sites.find(s => s.id === parseInt(btn.dataset.id));
+      editingSiteId = site.id;
+      document.getElementById('newSiteName').value = site.name;
+      document.getElementById('newSiteAddress').value = site.address;
+      document.getElementById('newSiteContact').value = site.contact_name || '';
+      document.getElementById('newSitePhone').value = site.phone || '';
+      document.getElementById('addSiteBtn').textContent = 'Update site';
+      document.getElementById('cancelSiteEditBtn').style.display = 'inline-block';
+    });
+  });
+}
+
+let editingSiteId = null;
+function resetSiteForm() {
+  editingSiteId = null;
+  document.getElementById('newSiteName').value = '';
+  document.getElementById('newSiteAddress').value = '';
+  document.getElementById('newSiteContact').value = '';
+  document.getElementById('newSitePhone').value = '';
+  document.getElementById('addSiteBtn').textContent = 'Add site';
+  document.getElementById('cancelSiteEditBtn').style.display = 'none';
+}
+
+document.getElementById('cancelSiteEditBtn').addEventListener('click', resetSiteForm);
+
+document.getElementById('addSiteBtn').addEventListener('click', async () => {
+  const name = document.getElementById('newSiteName').value.trim();
+  const address = document.getElementById('newSiteAddress').value.trim();
+  const contact_name = document.getElementById('newSiteContact').value.trim();
+  const phone = document.getElementById('newSitePhone').value.trim();
+  if (!name || !address) { alert('Enter a site name and address first'); return; }
+  if (editingSiteId) {
+    await api(`/sites/${editingSiteId}`, { method: 'PUT', body: JSON.stringify({ name, address, contact_name, phone }) });
+  } else {
+    await api('/sites', { method: 'POST', body: JSON.stringify({ client_id: editingClientId, name, address, contact_name, phone }) });
+  }
+  sites = await api('/sites');
+  resetSiteForm();
+  renderSitesList(editingClientId);
+});
+
+document.getElementById('clientForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const payload = {
+    name: document.getElementById('cName').value,
+    nickname: document.getElementById('cNickname').value,
+    address: document.getElementById('cAddress').value,
+    contact_name: document.getElementById('cContact').value,
+    phone: document.getElementById('cPhone').value,
+    email: document.getElementById('cEmail').value,
+    notes: document.getElementById('cNotes').value,
+  };
+  const wasNew = !editingClientId;
+  try {
+    if (editingClientId) {
+      await api(`/clients/${editingClientId}`, { method: 'PUT', body: JSON.stringify(payload) });
+    } else {
+      const created = await api('/clients', { method: 'POST', body: JSON.stringify(payload) });
+      editingClientId = created.id;
+    }
+    clients = await api('/clients');
+    populateSelects();
+    renderClientsTable();
+    if (wasNew) {
+      // Keep the modal open so they can add sites to the client they just created.
+      document.getElementById('sitesSection').style.display = 'block';
+      document.getElementById('deleteClientBtn').style.display = 'inline-block';
+      renderSitesList(editingClientId);
+      return;
+    }
+  } catch (err) { alert(err.message); }
+});
+
+document.getElementById('deleteClientBtn').addEventListener('click', async () => {
+  if (!confirm('Delete this client?')) return;
+  await api(`/clients/${editingClientId}`, { method: 'DELETE' });
+  clients = await api('/clients');
+  populateSelects();
+  renderClientsTable();
+  clientOverlay.classList.remove('shown');
+});
+
+function renderClientsTable() {
+  document.getElementById('clientsTableBody').innerHTML = clients.map(c => `
+    <tr data-id="${c.id}">
+      <td>${escapeHtml(c.name)}</td>
+      <td>${escapeHtml(c.nickname||'')}</td>
+      <td>${escapeHtml(c.address||'')}</td>
+      <td>${escapeHtml(c.contact_name||'')}</td>
+      <td>${escapeHtml(c.phone||'')}</td>
+      <td><button class="editClientBtn">Edit</button></td>
+    </tr>`).join('');
+  document.querySelectorAll('.editClientBtn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const id = parseInt(e.target.closest('tr').dataset.id);
+      openClientModal(clients.find(c => c.id === id));
+    });
+  });
+}
+
+// ---------- team (admin) ----------
+
+const userOverlay = document.getElementById('userOverlay');
+document.getElementById('newUserBtn').addEventListener('click', () => openUserModal(null));
+document.getElementById('cancelUserBtn').addEventListener('click', () => userOverlay.classList.remove('shown'));
+
+function openUserModal(u) {
+  editingUserId = u ? u.id : null;
+  document.getElementById('userModalTitle').textContent = u ? 'Edit team member' : 'New team member';
+  document.getElementById('uName').value = u ? u.name : '';
+  document.getElementById('uEmail').value = u ? u.email : '';
+  document.getElementById('uPassword').value = '';
+  document.getElementById('uPassword').required = !u;
+  document.getElementById('uPasswordHint').style.display = u ? 'inline' : 'none';
+  document.getElementById('uRole').value = u ? u.role : 'worker';
+  document.getElementById('uColor').value = u ? u.color : '#3B6E71';
+  document.getElementById('uActive').checked = u ? !!u.active : true;
+  userOverlay.classList.add('shown');
+}
+
+document.getElementById('userForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const payload = {
+    name: document.getElementById('uName').value,
+    email: document.getElementById('uEmail').value,
+    role: document.getElementById('uRole').value,
+    color: document.getElementById('uColor').value,
+    active: document.getElementById('uActive').checked,
+  };
+  const pw = document.getElementById('uPassword').value;
+  if (pw) payload.password = pw;
+  try {
+    if (editingUserId) await api(`/users/${editingUserId}`, { method: 'PUT', body: JSON.stringify(payload) });
+    else await api('/users', { method: 'POST', body: JSON.stringify(payload) });
+    users = await api('/users');
+    populateSelects();
+    renderUsersTable();
+    userOverlay.classList.remove('shown');
+  } catch (err) { alert(err.message); }
+});
+
+function renderUsersTable() {
+  document.getElementById('usersTableBody').innerHTML = users.map(u => `
+    <tr data-id="${u.id}">
+      <td><span class="who-dot" style="background:${u.color}"></span>${escapeHtml(u.name)}</td>
+      <td>${escapeHtml(u.email)}</td>
+      <td>${u.role}</td>
+      <td>${u.active ? 'Active' : 'Inactive'}</td>
+      <td><button class="editUserBtn">Edit</button></td>
+    </tr>`).join('');
+  document.querySelectorAll('.editUserBtn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const id = parseInt(e.target.closest('tr').dataset.id);
+      openUserModal(users.find(u => u.id === id));
+    });
+  });
+}
+
+boot();
+</script>
+</body>
+</html>

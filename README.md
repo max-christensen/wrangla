@@ -1,0 +1,155 @@
+<p align="center">
+  <img src="public/favicon.svg" alt="Wrangla" width="96">
+</p>
+
+# Wrangla
+
+Wrangla is a scheduling app for small businesses that run on people and tasks: consultants, trades, field crews. Put jobs on a calendar, assign them to people, log the hours actually worked, and see estimate against actual. It runs entirely on Cloudflare (a Worker for the code, D1 for the database, R2 for uploaded files), so there is no server to look after and no PC that has to stay on. At small-team scale it fits inside Cloudflare's free allowances.
+
+Each company that deploys it gets its own copy, with its own logo, details and colours.
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/max-christensen/wrangla)
+
+**Using the button:** it creates the Worker, the D1 database and the R2 bucket from `wrangler.toml`, and the deploy script loads the database tables for you (it runs [schema.sql](schema.sql), which is safe to run on every deploy). Nothing to run afterwards.
+
+You will be asked for two secrets, which are random values only you know:
+
+- `SESSION_SECRET`: a long random string that signs login sessions.
+- `SETUP_KEY`: a one-time password you use once to create the first admin account.
+
+If the button doesn't ask for them, add both in the Cloudflare dashboard under **Workers & Pages → wrangla → Settings → Variables and Secrets** (as secrets). Then carry on from [First run](#first-run).
+
+Prefer to do everything by hand? Follow [Set it up](#set-it-up).
+
+## What it does
+
+- **Calendar** with week and month views, weekends shrunk, client nicknames and estimate/real-hours badges on each job.
+- **Appointments and tasks**, at head office or at a client's job site, assigned to a person or left unassigned (shown in red).
+- **Multi-day jobs** that show as "Day 2 of 3" on each day, with an option to skip weekends.
+- **Recurring jobs** (weekly, fortnightly, monthly) and **drag to another day** for admins.
+- **Time logging per day**, reports by person and client, a utilisation panel, and PDF export through the print dialog.
+- **Notes and attachments** (photos, PDFs) on every job.
+- **Company branding**: name, address, registration number, logo and colours, set from a Settings screen.
+- **Optional two-factor login**: password, then a 6-digit code emailed through [Resend](https://resend.com).
+- Workers on a phone get a plain list of their own jobs.
+
+## What you need
+
+- A free [Cloudflare account](https://dash.cloudflare.com/sign-up). R2 (file storage) has to be switched on in the dashboard under **R2 Object Storage**, and Cloudflare may ask for a payment method to enable it. Usage at this scale stays inside the free allowance.
+- [Node.js](https://nodejs.org) 20 or newer.
+- Optional, for two-factor login: a [Resend](https://resend.com) account and a domain you control. See [Two-factor login](#two-factor-login-optional).
+
+## Set it up
+
+Everything below runs from a terminal in the project folder.
+
+1. **Get the code and install the tools**
+   ```
+   git clone <this repository's URL> wrangla
+   cd wrangla
+   npm install
+   npx wrangler login
+   ```
+   `wrangler login` opens a browser so the Wrangler command line tool can use your Cloudflare account.
+
+2. **Create the database**
+   ```
+   npx wrangler d1 create wrangla-db
+   ```
+   This prints a `database_id`. Open [wrangler.toml](wrangler.toml) and replace `REPLACE_WITH_YOUR_DATABASE_ID` with it. (If Wrangler offers to add the binding to your config for you, you can say yes, but check that the `database_name` is still `wrangla-db`.)
+
+3. **Create the file storage bucket** (for attachments and your logo)
+   ```
+   npx wrangler r2 bucket create wrangla-attachments
+   ```
+   The name already matches `wrangler.toml`.
+
+4. **Deploy**
+   ```
+   npm run deploy
+   ```
+   This first loads the database tables from [schema.sql](schema.sql) into your D1 database (safe to repeat), then deploys the Worker. Wrangler prints your address, something like `https://wrangla.<your-subdomain>.workers.dev`.
+
+5. **Set the two secrets**, which are random values only you know. Wrangler prompts you to type each one:
+   ```
+   npx wrangler secret put SESSION_SECRET
+   npx wrangler secret put SETUP_KEY
+   ```
+   - `SESSION_SECRET`: a long random string that signs login sessions. For example, generate one with `openssl rand -hex 32`.
+   - `SETUP_KEY`: a one-time password you use once to create the first admin account. You can forget it afterwards.
+
+   Nobody can log in until `SESSION_SECRET` is set, and the first admin can't be created until `SETUP_KEY` is set.
+
+## First run
+
+1. Open your address. On the login screen click **First time setting this up? Create the admin account**.
+2. Enter your name, email, a password (8 or more characters) and the `SETUP_KEY` you set above. This only works once; after the first admin exists it is disabled.
+3. You land on **Settings**. Enter your company name, address, phone, email and ABN or other registration number, upload your logo, and choose your colours. These show in the header, on the login screen and on printed reports. Until you upload a logo, the header shows the Wrangla W and your company name. You can change everything later from the Settings tab.
+4. Go to **Team** and add each person with a name, email, starting password, role and calendar colour.
+5. Go to **Clients** and add your clients and their job sites, then start scheduling from **Calendar**.
+
+The in-app **Help** page explains each screen in plain language.
+
+## Two-factor login (optional)
+
+When a Resend API key is present, logging in is a two-step process: the person enters their password, then a 6-digit code is emailed to them. The code is valid for about 10 minutes and allows 5 wrong guesses. A wrong password never reaches the code step. After the code, a session lasts 30 days, so the code is asked for roughly once a month per person per device. Only a hash of each code is stored.
+
+Without a key, password login alone is used, so an install with no email set up still works.
+
+To switch it on:
+
+1. Create a Resend account and an API key with sending access.
+2. In Resend, **add and verify a domain** you control (it gives you DNS records to add). Until a domain is verified, Resend only delivers to your own Resend account address, which is fine for a quick test but not for a team. **Every deployer needs their own Resend account and domain.**
+3. In [wrangler.toml](wrangler.toml), change `MAIL_FROM` under `[vars]` to an address on that domain, for example `"Acme Scheduling <login@yourdomain.com>"`.
+4. Store the key as a secret, then redeploy so `MAIL_FROM` takes effect:
+   ```
+   npx wrangler secret put RESEND_API_KEY
+   npm run deploy
+   ```
+5. Test by logging in as an admin in a private window.
+
+Admins can switch the code step off and on in **Settings → Sign-in security** (it is on by default once the key exists).
+
+**If the code email stops working and you are locked out**, remove the key so password login takes over, then fix your Resend setup:
+```
+npx wrangler secret delete RESEND_API_KEY
+```
+
+## Running it locally
+
+```
+cp .dev.vars.example .dev.vars     # then edit the values
+npm run db:init:local
+npm run dev
+```
+The app is then at http://localhost:8787. Local data, including uploaded files, is kept in the `.wrangler/` folder, which is git-ignored. `.dev.vars` holds your local secrets and is also git-ignored; never commit it.
+
+## Updating
+
+When you change the code, or pull a newer version, redeploy:
+```
+npm run deploy
+```
+There is no downtime and no server to restart. If a newer version changes the database tables, its release notes will say what to run.
+
+To keep a backup of your data: `npx wrangler d1 export wrangla-db --remote --output=backup.sql`.
+
+## A note on naming: "job sites" vs `project_site`
+
+In the app, a client's locations are called **job sites**. The database and code still use the older name `project_sites` (the table) and `project_site` (a value of `appointments.location_type`). That is deliberate: the change was wording only, so no migration was needed. If you are reading the code and see `project_site`, it means "job site".
+
+## Notes for contributors
+
+- The Worker is [src/index.js](src/index.js); the whole front end is [public/index.html](public/index.html), with the help page in [public/help.html](public/help.html). There is no build step.
+- **Dates in the browser must be built from the local year, month and day, never from `toISOString()`**, or users east of UTC see everything a day early. Use the `fmtDate` helper. The Worker does its date arithmetic in UTC on `YYYY-MM-DD` strings, which is safe.
+- An item's days are worked out by `itemDates()` in the Worker, which also decides weekend skipping. The browser reads the resulting `dates` list rather than recomputing it.
+- `schema.sql` runs on every deploy, so it must stay re-runnable: use `CREATE ... IF NOT EXISTS` and `INSERT OR IGNORE`. It never alters a table that already exists, so changing an existing table needs a separate migration.
+- Hours live in `time_entries` (one row per person per day, per item). People on an item live in `item_people`.
+
+## Cost
+
+At the scale this is built for (a handful of workers, a few dozen clients) it fits in Cloudflare's free allowances for Workers and D1. R2 has a free allowance too. Resend, if you use it, has a free tier. Check the current limits on each provider's pricing page.
+
+## Licence
+
+[MIT](LICENSE).

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wrangla — Help</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<style>
+  :root {
+    --bg: #F2F1EC; --surface: #FFFFFF; --ink: #1F2A24; --ink-soft: #55594F; --muted: #8A8676;
+    --border: #DAD5C8; --office: #3B6E71; --office-bg: #E7EFEE; --site: #C4732C; --site-bg: #F7E9DA;
+    --done: #4C7A4C; --done-bg: #E6EDE3; --danger: #B24A3D; --radius: 8px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: var(--font); background: var(--bg); color: var(--ink); line-height: 1.55; }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 32px 24px 80px; }
+  header { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+  .brand-logo { height: 34px; width: auto; max-width: 220px; object-fit: contain; display: block; }
+  .brand-fallback { display: inline-flex; align-items: center; gap: 10px; font-weight: 600; font-size: 16px; }
+  .w-mark { display: inline-block; width: 1.146em; height: 1em; font-size: 32px; background: var(--office); -webkit-mask: url(wrangla-w.svg) no-repeat center / contain; mask: url(wrangla-w.svg) no-repeat center / contain; }
+  h1 { font-size: 22px; margin: 24px 0 4px; }
+  h2 { font-size: 17px; margin: 32px 0 10px; padding-top: 14px; border-top: 1px solid var(--border); }
+  h3 { font-size: 14.5px; margin: 18px 0 6px; color: var(--ink-soft); }
+  p { margin: 6px 0 10px; }
+  ul, ol { margin: 4px 0 12px; padding-left: 22px; }
+  li { margin-bottom: 5px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; }
+  .pill { display: inline-block; font-size: 11px; padding: 1px 8px; border-radius: 20px; font-weight: 600; }
+  .pill.admin { background: var(--office-bg); color: var(--office); }
+  .pill.worker { background: var(--done-bg); color: var(--done); }
+  .note { background: var(--office-bg); border-left: 3px solid var(--office); padding: 10px 14px; border-radius: 4px; font-size: 13.5px; margin: 10px 0; }
+  .warn { background: var(--site-bg); border-left: 3px solid var(--site); padding: 10px 14px; border-radius: 4px; font-size: 13.5px; margin: 10px 0; }
+  table.perm { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 8px; }
+  table.perm th { text-align: left; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  table.perm td { padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  table.perm tr:last-child td { border-bottom: none; }
+  code { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; font-size: 12.5px; }
+  nav.toc { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 20px; margin: 18px 0 28px; font-size: 13.5px; }
+  nav.toc a { color: var(--office); text-decoration: none; }
+  nav.toc ul { columns: 2; padding-left: 18px; }
+  @media (max-width: 560px) { nav.toc ul { columns: 1; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div id="helpBrand"></div>
+  <div>
+    <h1 style="margin:0;">Help</h1>
+    <p style="margin:0; color:var(--muted); font-size:13px;">Everything you need to know to use Wrangla.</p>
+  </div>
+</header>
+
+<nav class="toc">
+  <strong>Jump to:</strong>
+  <ul>
+    <li><a href="#login">Logging in</a></li>
+    <li><a href="#calendar">The calendar</a></li>
+    <li><a href="#newjob">Creating a job or task</a></li>
+    <li><a href="#multiday">Jobs that run for several days</a></li>
+    <li><a href="#drag">Moving jobs by dragging</a></li>
+    <li><a href="#recurring">Recurring jobs</a></li>
+    <li><a href="#unassigned">Unassigned jobs</a></li>
+    <li><a href="#complete">Logging time &amp; marking complete</a></li>
+    <li><a href="#notes">Attachments &amp; team notes</a></li>
+    <li><a href="#clients">Clients</a></li>
+    <li><a href="#sites">Job sites</a></li>
+    <li><a href="#team">Team</a></li>
+    <li><a href="#reports">Reports &amp; utilisation</a></li>
+    <li><a href="#export">Exporting to PDF</a></li>
+    <li><a href="#mobile">Using it on your phone</a></li>
+    <li><a href="#settings">Settings (admins)</a></li>
+    <li><a href="#permissions">Who can do what</a></li>
+  </ul>
+</nav>
+
+<div class="card">
+
+<h2 id="login">Logging in</h2>
+<p>Go to the app's web address and log in with the email and password your admin gave you. There's no self-signup. Accounts are created by an admin in the <a href="#team">Team</a> section.</p>
+<p>If your company has switched on emailed codes, there's a second step: after your password is accepted, a 6-digit code is emailed to you. Type it in to finish logging in. The code works for 10 minutes, and you get five tries at it. If it runs out, just log in again to get a new one.</p>
+<p>Once you're in, you stay logged in for 30 days. That means you'll only see the code step about once a month, on each device you use.</p>
+<div class="note">If the code email doesn't arrive, check your junk folder, then ask your admin to check the email setup.</div>
+
+<h2 id="calendar">The calendar</h2>
+<p>The Calendar tab is the home screen. There are two views:</p>
+<ul>
+  <li><strong>Week view</strong>: seven days across, each job shown as a card. Saturday and Sunday are shrunk down since weekend work is rare.</li>
+  <li><strong>Month view</strong>: the whole month, with each job as a small chip showing its title, client, who it's for and where. On the chips, <strong>E</strong> is the estimated hours for that day and <strong>R</strong> is the real hours logged.</li>
+</ul>
+<p>Switch between them with the dropdown next to <strong>Prev / Today / Next</strong>. In month view, if a day has more than 3 jobs you'll see a <strong>+N more</strong> link. Click it to jump into that day's week view.</p>
+<p>Admins also get an <strong>Everyone</strong> dropdown to filter the calendar down to one person.</p>
+<p>Under the calendar, the <strong>Utilisation</strong> table shows each person's estimated and logged hours for the week and month you're looking at.</p>
+<p>Card colours: a teal (or your accent colour) left edge means head office, orange means a job site, green means completed, and red means <a href="#unassigned">unassigned</a>.</p>
+
+<h2 id="newjob">Creating a job or task</h2>
+<p>Click <strong>New</strong> from the calendar. There are two types:</p>
+<ul>
+  <li><strong>Appointment</strong>: has a date, and is either at head office or at a job site.</li>
+  <li><strong>Task</strong>: has a due date instead, for things like "chase up a signed contract."</li>
+</ul>
+<p><strong>Type of work</strong> is free text. Type anything (e.g. "Site Inspection," "Audit," "Training"). It remembers what's been typed before and suggests it as you type.</p>
+<p><strong>Estimated time</strong> is the total hours you expect the job to take. It feeds the utilisation table and reports.</p>
+<p>For a job-site appointment, pick a saved site from the dropdown (its address and site contact come along automatically), or type a one-off address.</p>
+<p>There's no start or finish time to set up front. You pick the date, and whoever does the job logs the real times afterwards. See <a href="#complete">Logging time</a>.</p>
+
+<h2 id="multiday">Jobs that run for several days</h2>
+<p>Set <strong>Number of days</strong> when you create or edit a job. The job then appears on each of those days, labelled <strong>Day 1 of 3</strong>, <strong>Day 2 of 3</strong> and so on. Every day of a job has the same person and the same colour, so it's easy to follow across the week.</p>
+<ul>
+  <li>The <strong>estimate is spread evenly across the days</strong>. A 6-hour job over 3 days counts as 2 hours on each day. If a job crosses a weekend or month end, each week and month gets its own share.</li>
+  <li><strong>Hours are logged per day</strong>. Each day has its own Started and Finished boxes (see <a href="#complete">Logging time</a>).</li>
+  <li>Admins can turn on <strong>Skip weekends on multi-day items</strong> in <a href="#settings">Settings</a>. Then a 3-day job starting Thursday lands on Thursday, Friday and Monday. Single-day jobs always stay exactly on the day you pick.</li>
+  <li>Recurring jobs can be multi-day too. Each repeat runs for the same number of days.</li>
+</ul>
+
+<h2 id="drag">Moving jobs by dragging</h2>
+<p class="pill admin">Admin only</p>
+<p>On a computer, admins can click and hold any job on the calendar, drag it to another day and let go. The job's start date changes to match. A multi-day job moves as a whole block, so if you drag Day 2 to Tuesday, the days after it follow along.</p>
+<p>Dragging works in both week and month view. To change who a job is assigned to, open it and change <strong>Assign to</strong>.</p>
+
+<h2 id="recurring">Recurring jobs</h2>
+<p>When creating a <em>new</em> job or task, tick <strong>Repeats</strong> to set up a series:</p>
+<ul>
+  <li><strong>Weekly</strong> or <strong>Fortnightly</strong>: repeats every 7 or 14 days from the date you set.</li>
+  <li><strong>Monthly</strong>: choose either "same date each month" (e.g. always the 15th) or "same weekday" (e.g. always the 3rd Tuesday).</li>
+  <li>Set how many occurrences to make (up to 52 at a time).</li>
+</ul>
+<p>Each occurrence is its own separate job, so completing or editing one doesn't affect the others. To cancel the rest of a series, open any job in it that isn't completed and use <strong>Delete this + future</strong>. Completed ones are kept for your records.</p>
+
+<h2 id="unassigned">Unassigned jobs</h2>
+<p>When creating or editing a job as an admin, you can leave <strong>Assign to</strong> set to <em>Unassigned</em>. It still shows on the calendar for everyone, in red and labelled "Unassigned", so nothing falls through the cracks while you decide who's doing it.</p>
+
+<h2 id="complete">Logging time &amp; marking complete</h2>
+<p>Open any job you're on (or any job, if you're an admin) and scroll to <strong>Log time and mark complete</strong>. Enter the Started and Finished times for each day you worked on it. A one-day job has one pair of boxes; a three-day job has three. Leave a day blank if no time was worked.</p>
+<p>Click <strong>Mark complete</strong> to save the times and close the job off. This works for appointments and tasks, and it gives you real numbers for invoicing.</p>
+<p>Already marked complete but need to fix a time or add a note? Open it again. The same section is there, now called <strong>Update time and notes</strong>.</p>
+
+<h2 id="notes">Attachments &amp; team notes</h2>
+<p>Every saved job has two extra sections at the bottom of its popup:</p>
+<ul>
+  <li><strong>Attachments</strong>: upload photos or PDFs (up to 20MB each). Anyone can upload; only an admin can remove one.</li>
+  <li><strong>Team notes</strong>: a running thread anyone can post to and everyone can read. Good for handover notes between visits, e.g. "site was locked, waited 10 min for the supervisor."</li>
+</ul>
+<p class="note">These sections only appear once a job has been saved. A brand-new job has nowhere to attach files yet.</p>
+
+<h2 id="clients">Clients</h2>
+<p>Admins manage clients from the <strong>Clients</strong> tab. Each client has:</p>
+<ul>
+  <li><strong>Name</strong> and an optional <strong>Nickname</strong>: a short version (e.g. "Acme" for "Acme Building") used on the calendar to keep things compact.</li>
+  <li><strong>Address</strong>: their head office or billing address, shown whenever a job is booked there.</li>
+  <li>Contact name, phone, email and notes.</li>
+</ul>
+<p>Workers can see the client list (they need it when booking their own jobs) but can't add, edit or delete clients.</p>
+
+<h2 id="sites">Job sites</h2>
+<p>Open a client and scroll down to <strong>Job sites</strong>. A client can have several (handy for clients running multiple sites at once). Each site has its own name, address, and its own contact name and phone, since the person on site is often different from the office contact.</p>
+<p>Click <strong>Edit</strong> next to a site to update it, or <strong>Remove</strong> to delete it.</p>
+
+<h2 id="team">Team</h2>
+<p class="pill admin">Admin only</p>
+<p>Add, edit or deactivate team members here. Set each person's <strong>Role</strong> to Worker or Admin; you can have as many admins as you like. Each person also gets a <strong>calendar colour</strong>, used on their jobs. Deactivating someone keeps their history but stops them logging in.</p>
+
+<h2 id="reports">Reports &amp; utilisation</h2>
+<p>Pick a date range, optionally narrow it to one person and/or one client, then click <strong>Run report</strong>. It lists the work by person, one row per job per day, with the date, type of work, client, location, the times logged, the estimate for that day and the duration. Each person's hours are totalled at the top of their section. Everything is read from the hours logged against each day.</p>
+<p>It's the quickest way to answer "how much time did we spend on this client this month" for invoicing. Admins can run it for anyone. Workers see their own work.</p>
+<p>The <strong>Utilisation</strong> table compares estimated hours with logged hours, per person, for the current week and month.</p>
+
+<h2 id="export">Exporting to PDF</h2>
+<p>Both the calendar and the Reports tab have an <strong>Export PDF</strong> button. It opens your browser's print dialog with a clean version of what's on screen, headed with your company logo and details. Choose "Save as PDF" there to get a file.</p>
+
+<h2 id="mobile">Using it on your phone</h2>
+<p>Open the app's web address in your phone's browser. Workers on a phone get a plain list of their own jobs for the next 30 days (today first), and can tap a job to log time or add a note. Scheduling and dragging are done from a computer.</p>
+<p>For quick access, use your browser's <strong>"Add to Home Screen"</strong> option so it sits on your phone like an app.</p>
+
+<h2 id="settings">Settings (admins)</h2>
+<p class="pill admin">Admin only</p>
+<p>The first time an admin logs in, Wrangla opens Settings so you can set up your company. You can come back any time from the <strong>Settings</strong> tab.</p>
+<ul>
+  <li><strong>Company details</strong>: name, address, phone, email and your ABN or other registration number. These appear on printed reports.</li>
+  <li><strong>Colours</strong>: pick a ready-made preset, or choose your own main colour (sidebar and buttons) and accent colour (links, highlights). Wrangla checks the contrast for you and won't let you save an accent colour that's too light to read. The sidebar text always switches between light and dark so it stays readable.</li>
+  <li><strong>Logo</strong>: upload your company logo (PNG, JPG, WebP, GIF or SVG, up to 2MB). It's shown at a fixed height, with its proportions kept, in the header, on the login screen and on printouts. Until you upload one, the Wrangla W and your company name are shown.</li>
+  <li><strong>Scheduling</strong>: whether multi-day jobs skip weekends.</li>
+  <li><strong>Sign-in security</strong>: turn the emailed login code on or off. It's only available once your host has set up email sending.</li>
+</ul>
+
+<h2 id="permissions">Who can do what</h2>
+<table class="perm">
+  <thead>
+    <tr>
+      <th>Action</th>
+      <th><span class="pill worker">Worker</span></th>
+      <th><span class="pill admin">Admin</span></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>See own jobs + unassigned jobs</td><td>✔</td><td>✔ (sees everyone's)</td></tr>
+    <tr><td>Create their own jobs/tasks</td><td>✔</td><td>✔</td></tr>
+    <tr><td>Reassign / reschedule any job, drag jobs to other days</td><td>—</td><td>✔</td></tr>
+    <tr><td>Log time / mark complete / add notes</td><td>✔ (own jobs)</td><td>✔ (any job)</td></tr>
+    <tr><td>Upload attachments / post team notes</td><td>✔</td><td>✔</td></tr>
+    <tr><td>Manage clients &amp; job sites</td><td>—</td><td>✔</td></tr>
+    <tr><td>Manage team members</td><td>—</td><td>✔</td></tr>
+    <tr><td>Run reports</td><td>✔ (own work)</td><td>✔ (anyone's)</td></tr>
+    <tr><td>Change company settings, logo and colours</td><td>—</td><td>✔</td></tr>
+    <tr><td>Delete a job or a whole series</td><td>—</td><td>✔</td></tr>
+  </tbody>
+</table>
+
+</div>
+</div>
+<script>
+fetch('/api/public-settings').then(r => r.json()).then(s => {
+  const name = s.company_name || 'Wrangla';
+  const esc = t => t.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  document.getElementById('helpBrand').innerHTML = s.has_logo
+    ? `<img class="brand-logo" src="/api/logo?v=${encodeURIComponent(s.logo_version||'')}" alt="${esc(name)}">`
+    : `<span class="brand-fallback"><span class="w-mark"></span><span>${esc(name)}</span></span>`;
+}).catch(() => {});
+</script>
+</body>
+</html>

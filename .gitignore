@@ -1,0 +1,13 @@
+# Local secrets (never commit these)
+.dev.vars
+.env
+
+# Wrangler's local state, including test databases and uploaded test files
+.wrangler/
+
+node_modules/
+
+# Editor / OS noise
+.DS_Store
+Thumbs.db
+*.log

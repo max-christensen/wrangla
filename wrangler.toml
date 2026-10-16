@@ -1,0 +1,23 @@
+name = "wrangla"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+# Let the Worker handle /api/* itself; everything else is served as a static file
+run_worker_first = ["/api/*"]
+
+[vars]
+# Sender for the emailed login code. Resend only delivers from onboarding@resend.dev to your own
+# Resend account address; for real use, verify a domain in Resend and set e.g. "Wrangla <login@yourdomain.com>".
+MAIL_FROM = "Wrangla <onboarding@resend.dev>"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "wrangla-db"
+database_id = "REPLACE_WITH_YOUR_DATABASE_ID"
+
+[[r2_buckets]]
+binding = "ATTACHMENTS"
+bucket_name = "wrangla-attachments"
