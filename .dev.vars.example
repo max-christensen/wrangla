@@ -1,6 +1,12 @@
-# Copy to .dev.vars for local development (`npm run dev`). .dev.vars is git-ignored.
-# For a deployed Worker, set these with `wrangler secret put <NAME>` instead.
-SESSION_SECRET=replace-with-a-long-random-string
-SETUP_KEY=replace-with-a-one-time-password-for-creating-the-first-admin
+# Local development (`npm run dev`) works with no secrets at all. To try the optional ones, copy this file
+# to .dev.vars (git-ignored) and uncomment what you want. For a deployed Worker, set them with
+# `wrangler secret put <NAME>` or in the Cloudflare dashboard instead.
+
+# Optional. Without it, the first admin can be created by whoever opens the app first. With it, setup needs this key.
+# SETUP_KEY=choose-a-one-time-password
+
+# Optional. Without it, Wrangla generates a random signing key and keeps it in the database.
+# SESSION_SECRET=a-long-random-string
+
 # Optional. Setting this turns on emailed two-factor login codes (see README).
 # RESEND_API_KEY=re_xxxxxxxxxxxx

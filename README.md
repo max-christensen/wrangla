@@ -12,12 +12,7 @@ Each company that deploys it gets its own copy, with its own logo, details and c
 
 **Using the button:** it creates the Worker, the D1 database and the R2 bucket from `wrangler.toml`, and the deploy script loads the database tables for you (it runs [schema.sql](schema.sql), which is safe to run on every deploy). Nothing to run afterwards.
 
-You will be asked for two secrets, which are random values only you know:
-
-- `SESSION_SECRET`: a long random string that signs login sessions.
-- `SETUP_KEY`: a one-time password you use once to create the first admin account.
-
-If the button doesn't ask for them, add both in the Cloudflare dashboard under **Workers & Pages → wrangla → Settings → Variables and Secrets** (as secrets). Then carry on from [First run](#first-run).
+The button needs nothing typed in. **Open your Worker's address straight after it deploys and create the admin account** (see [First run](#first-run)). Until an admin exists, the first person to open the setup screen becomes the admin, so don't leave it. For extra protection, see [Optional secrets](#optional-secrets).
 
 Prefer to do everything by hand? Follow [Set it up](#set-it-up).
 
@@ -70,25 +65,30 @@ Everything below runs from a terminal in the project folder.
    ```
    This first loads the database tables from [schema.sql](schema.sql) into your D1 database (safe to repeat), then deploys the Worker. Wrangler prints your address, something like `https://wrangla.<your-subdomain>.workers.dev`.
 
-5. **Set the two secrets**, which are random values only you know. Wrangler prompts you to type each one:
-   ```
-   npx wrangler secret put SESSION_SECRET
-   npx wrangler secret put SETUP_KEY
-   ```
-   - `SESSION_SECRET`: a long random string that signs login sessions. For example, generate one with `openssl rand -hex 32`.
-   - `SETUP_KEY`: a one-time password you use once to create the first admin account. You can forget it afterwards.
-
-   Nobody can log in until `SESSION_SECRET` is set, and the first admin can't be created until `SETUP_KEY` is set.
+5. **Optional: set secrets** for extra protection. See [Optional secrets](#optional-secrets). If you want a setup key, set it before you open the app for the first time.
 
 ## First run
 
 1. Open your address. On the login screen click **First time setting this up? Create the admin account**.
-2. Enter your name, email, a password (8 or more characters) and the `SETUP_KEY` you set above. This only works once; after the first admin exists it is disabled.
+2. Enter your name, email and a password (8 or more characters). If you set a `SETUP_KEY` secret, the form also asks for it. This only works once; after the first admin exists it is disabled.
 3. You land on **Settings**. Enter your company name, address, phone, email and ABN or other registration number, upload your logo, and choose your colours. These show in the header, on the login screen and on printed reports. Until you upload a logo, the header shows the Wrangla W and your company name. You can change everything later from the Settings tab.
 4. Go to **Team** and add each person with a name, email, starting password, role and calendar colour.
 5. Go to **Clients** and add your clients and their job sites, then start scheduling from **Calendar**.
 
 The in-app **Help** page explains each screen in plain language.
+
+## Optional secrets
+
+Wrangla works with no secrets set. Two optional ones add protection:
+
+- **`SETUP_KEY`**: a one-time password you choose. When set, creating the first admin needs it, so nobody else can claim the admin account if they find your address first. Set it before you first open the app.
+- **`SESSION_SECRET`**: a long random string that signs login sessions, for example from `openssl rand -hex 32`. When it isn't set, Wrangla generates a random key on first use and stores it in your database; sessions are equally secure, but the key lives in the database. Setting your own keeps it out of the database and lets you rotate it. Setting or changing it logs everyone out once.
+
+Set them with the Wrangler tool, or in the Cloudflare dashboard under **Workers & Pages → wrangla → Settings → Variables and Secrets** (as secrets):
+```
+npx wrangler secret put SETUP_KEY
+npx wrangler secret put SESSION_SECRET
+```
 
 ## Two-factor login (optional)
 
@@ -118,7 +118,7 @@ npx wrangler secret delete RESEND_API_KEY
 ## Running it locally
 
 ```
-cp .dev.vars.example .dev.vars     # then edit the values
+cp .dev.vars.example .dev.vars     # optional: it works with no secrets, so you can skip this
 npm run db:init:local
 npm run dev
 ```

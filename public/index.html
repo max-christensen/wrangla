@@ -294,8 +294,10 @@
       <div id="setupExtraFields" style="display:none">
         <label>Your name</label>
         <input type="text" id="setupName">
-        <label>Setup key</label>
-        <input type="text" id="setupKey">
+        <div id="setupKeyRow">
+          <label>Setup key</label>
+          <input type="text" id="setupKey">
+        </div>
       </div>
       <button type="submit" class="primary" style="width:100%; margin-top:18px;" id="loginSubmit">Log in</button>
       <div class="error-text" id="loginError"></div>
@@ -754,9 +756,10 @@ document.getElementById('toggleSetup').addEventListener('click', (e) => {
   e.preventDefault();
   setupMode = !setupMode;
   document.getElementById('setupExtraFields').style.display = setupMode ? 'block' : 'none';
+  document.getElementById('setupKeyRow').style.display = publicSettings.setup_key_required ? 'block' : 'none';
   document.getElementById('loginTitle').textContent = setupMode ? 'Create admin account' : 'Log in';
   document.getElementById('loginSub').textContent = setupMode
-    ? 'One-time setup. Ask whoever hosts this app for the setup key.'
+    ? (publicSettings.setup_key_required ? 'One-time setup. Ask whoever hosts this app for the setup key.' : 'One-time setup. You are creating the first administrator account.')
     : 'Enter your details to see your schedule.';
   document.getElementById('loginSubmit').textContent = setupMode ? 'Create account' : 'Log in';
   e.target.textContent = setupMode ? 'Back to log in' : 'First time setting this up? Create the admin account';

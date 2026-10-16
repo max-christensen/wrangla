@@ -110,9 +110,27 @@ function setCookieHeader(name, value, maxAgeSeconds) {
   return parts.join("; ");
 }
 
+// The key that signs sessions and login codes. If the SESSION_SECRET secret is set it is used exactly as
+// before. If not (for example after a one-click button install), a random key is generated on first use and
+// kept in the settings table, so an install needs no secrets typed in. It is never returned by any endpoint.
+let generatedSecret = null;
+async function sessionSecret(env) {
+  if (env.SESSION_SECRET) return env.SESSION_SECRET;
+  if (generatedSecret) return generatedSecret;
+  let row = await env.DB.prepare("SELECT value FROM settings WHERE key = 'session_secret'").first();
+  if (!row) {
+    const fresh = b64url(crypto.getRandomValues(new Uint8Array(32)));
+    // INSERT OR IGNORE so two first requests at once agree on one key.
+    await env.DB.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('session_secret', ?)").bind(fresh).run();
+    row = await env.DB.prepare("SELECT value FROM settings WHERE key = 'session_secret'").first();
+  }
+  generatedSecret = row.value;
+  return generatedSecret;
+}
+
 async function getUser(request, env) {
   const token = getCookie(request, COOKIE_NAME);
-  const payload = await readSession(token, env.SESSION_SECRET);
+  const payload = await readSession(token, await sessionSecret(env));
   if (!payload || payload.kind) return null; // "kind" marks a half-finished 2FA login, not a session
   const user = await env.DB.prepare(
     "SELECT id, name, email, role, color, active FROM users WHERE id = ? AND active = 1"
@@ -164,7 +182,9 @@ function minutesBetween(start, end) {
 async function handleSetup(request, env) {
   const body = await request.json();
   const { setup_key, name, email, password } = body;
-  if (!setup_key || setup_key !== env.SETUP_KEY) {
+  // With a SETUP_KEY secret set, the key is required exactly as before. Without one, setup is open
+  // until the first admin exists (it always closes itself after that).
+  if (env.SETUP_KEY && (!setup_key || setup_key !== env.SETUP_KEY)) {
     return json({ error: "Invalid setup key" }, 403);
   }
   const existingAdmin = await env.DB.prepare(
@@ -177,9 +197,12 @@ async function handleSetup(request, env) {
     return json({ error: "Name, email, and an 8+ character password are required" }, 400);
   }
   const hash = await hashPassword(password);
-  await env.DB.prepare(
-    "INSERT INTO users (name, email, password_hash, role, color) VALUES (?, ?, ?, 'admin', '#1F2A24')"
+  // Insert only if there is still no admin at this instant, so two setup requests at once can't make two.
+  const result = await env.DB.prepare(
+    `INSERT INTO users (name, email, password_hash, role, color)
+     SELECT ?, ?, ?, 'admin', '#1F2A24' WHERE NOT EXISTS (SELECT 1 FROM users WHERE role = 'admin')`
   ).bind(name, email.toLowerCase(), hash).run();
+  if (!result.meta.changes) return json({ error: "Admin already exists. Setup is one-time only." }, 403);
   return json({ ok: true });
 }
 
@@ -192,7 +215,7 @@ function twoFactorOn(env, settings) {
 }
 
 async function hashCode(env, userId, code) {
-  const key = await hmacKey(env.SESSION_SECRET);
+  const key = await hmacKey(await sessionSecret(env));
   return b64url(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`login-code:${userId}:${code}`)));
 }
 
@@ -232,7 +255,7 @@ async function sendLoginCode(env, toEmail, code, company) {
 
 function startSession(user, env) {
   const exp = Date.now() + SESSION_HOURS * 3600 * 1000;
-  return makeSession({ uid: user.id, exp }, env.SESSION_SECRET).then(token => json(
+  return sessionSecret(env).then(secret => makeSession({ uid: user.id, exp }, secret)).then(token => json(
     { id: user.id, name: user.name, email: user.email, role: user.role, color: user.color },
     200,
     { "Set-Cookie": setCookieHeader(COOKIE_NAME, token, SESSION_HOURS * 3600) }
@@ -272,7 +295,7 @@ async function handleLogin(request, env) {
     return json({ error: "Could not send the login code email. Ask your administrator to check the Resend setup." }, 502);
   }
   const challenge = await makeSession(
-    { uid: user.id, kind: "2fa", exp: Date.now() + CODE_MINUTES * 60000 }, env.SESSION_SECRET
+    { uid: user.id, kind: "2fa", exp: Date.now() + CODE_MINUTES * 60000 }, await sessionSecret(env)
   );
   const [local, domain] = user.email.split("@");
   return json({ needs_code: true, challenge, sent_to: `${local.slice(0, 2)}***@${domain}` });
@@ -280,7 +303,7 @@ async function handleLogin(request, env) {
 
 async function handleVerifyCode(request, env) {
   const { challenge, code } = await request.json();
-  const payload = await readSession(challenge, env.SESSION_SECRET);
+  const payload = await readSession(challenge, await sessionSecret(env));
   if (!payload || payload.kind !== "2fa") return json({ error: "That login attempt has expired. Please log in again." }, 401);
   const row = await env.DB.prepare(
     "SELECT * FROM login_codes WHERE user_id = ? ORDER BY id DESC LIMIT 1"
@@ -350,6 +373,7 @@ async function handlePublicSettings(env) {
     main_color: s.main_color || DEFAULT_MAIN,
     accent_color: s.accent_color || DEFAULT_ACCENT,
     needs_setup: !admin,
+    setup_key_required: !!env.SETUP_KEY,
   });
 }
 
