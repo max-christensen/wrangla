@@ -8,14 +8,6 @@ Wrangla is a scheduling app for small businesses that run on people and tasks: c
 
 Each company that deploys it gets its own copy, with its own logo, details and colours.
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/max-christensen/wrangla)
-
-**Using the button:** it creates the Worker, the D1 database and the R2 bucket from `wrangler.toml`, and the deploy script loads the database tables for you (it runs [schema.sql](schema.sql), which is safe to run on every deploy). Nothing to run afterwards.
-
-The button may show boxes for `SETUP_KEY` and `SESSION_SECRET`. **Leave them blank**: nothing needs typing in. **Open your Worker's address straight after it deploys and create the admin account** (see [First run](#first-run)). Until an admin exists, the first person to open the setup screen becomes the admin, so don't leave it. For extra protection, see [Optional secrets](#optional-secrets).
-
-Prefer to do everything by hand? Follow [Set it up](#set-it-up).
-
 ## What it does
 
 - **Calendar** with week and month views, weekends shrunk, client nicknames and estimate/real-hours badges on each job.
