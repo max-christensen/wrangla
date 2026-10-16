@@ -12,7 +12,7 @@ Each company that deploys it gets its own copy, with its own logo, details and c
 
 **Using the button:** it creates the Worker, the D1 database and the R2 bucket from `wrangler.toml`, and the deploy script loads the database tables for you (it runs [schema.sql](schema.sql), which is safe to run on every deploy). Nothing to run afterwards.
 
-The button needs nothing typed in. **Open your Worker's address straight after it deploys and create the admin account** (see [First run](#first-run)). Until an admin exists, the first person to open the setup screen becomes the admin, so don't leave it. For extra protection, see [Optional secrets](#optional-secrets).
+The button may show boxes for `SETUP_KEY` and `SESSION_SECRET`. **Leave them blank**: nothing needs typing in. **Open your Worker's address straight after it deploys and create the admin account** (see [First run](#first-run)). Until an admin exists, the first person to open the setup screen becomes the admin, so don't leave it. For extra protection, see [Optional secrets](#optional-secrets).
 
 Prefer to do everything by hand? Follow [Set it up](#set-it-up).
 
@@ -79,7 +79,7 @@ The in-app **Help** page explains each screen in plain language.
 
 ## Optional secrets
 
-Wrangla works with no secrets set. Two optional ones add protection:
+Wrangla works with no secrets set, and a blank value counts as not set. Two optional ones add protection:
 
 - **`SETUP_KEY`**: a one-time password you choose. When set, creating the first admin needs it, so nobody else can claim the admin account if they find your address first. Set it before you first open the app.
 - **`SESSION_SECRET`**: a long random string that signs login sessions, for example from `openssl rand -hex 32`. When it isn't set, Wrangla generates a random key on first use and stores it in your database; sessions are equally secure, but the key lives in the database. Setting your own keeps it out of the database and lets you rotate it. Setting or changing it logs everyone out once.
