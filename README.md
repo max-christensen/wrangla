@@ -177,7 +177,11 @@ In the app, a client's locations are called **job sites**. The database and code
 
 ## Cost
 
-At the scale this is built for (a handful of workers, a few dozen clients) it fits in Cloudflare's free allowances for Workers and D1. R2 has a free allowance too. Resend, if you use it, has a free tier. Check the current limits on each provider's pricing page.
+At the size Wrangla is built for, a handful of workers and a few dozen clients, it runs on Cloudflare's free plans and should not cost anything. Here are the free limits as they stand at the time of writing, though Cloudflare can change them whenever it likes. The Worker, which runs the app's code, gets 100,000 requests a day. The database (D1) gets 5 million row reads a day, 100,000 row writes a day and 5 GB of storage. File storage (R2) gets 10 GB of storage, 1 million writes and 10 million reads a month, with no charge for downloads. A small team using the calendar all day stays far below all of these.
+
+If a daily limit is ever reached, the app simply shows errors until the limits reset at midnight UTC (10am Brisbane time), and it does not start charging. R2 may ask for a payment method before you can switch it on, even though your usage stays inside the free allowance, as mentioned in [What you need](#what-you-need).
+
+Resend, if you use it, has a free tier. Check the current limits on each provider's pricing page, including Cloudflare's for [Workers](https://developers.cloudflare.com/workers/platform/pricing/), [D1](https://developers.cloudflare.com/d1/platform/pricing/) and [R2](https://developers.cloudflare.com/r2/pricing/).
 
 ## Licence
 
