@@ -16,6 +16,35 @@ The button needs nothing typed in. **Open your Worker's address straight after i
 
 Prefer to do everything by hand? Follow [Set it up](#set-it-up).
 
+## Screenshots
+
+Here's what Wrangla looks like with some made-up data for a small field services company. The week view is the home screen: every job is a card, colour-coded by who's doing it, with the estimated and logged hours underneath and a utilisation table for the whole team.
+
+![The Wrangla week view, with a card for each job and a utilisation table underneath](docs/screenshots/calendar.jpg)
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/activity-edit.jpg" alt="The job edit window, showing the title, client, type of work, estimate, assigned person, site and the time logged" width="320">
+      <br>Open any job to change it, log the real start and finish times, or add notes.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/reports.jpg" alt="The Reports page, listing each person's jobs with estimated and logged hours" width="100%">
+      <br>Reports total up the hours by person and client, ready for invoicing.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/clients.jpg" alt="The Clients page, a list of clients with nickname, address, contact and phone" width="100%">
+      <br>Keep your clients and their job sites in one place.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/team-members.jpg" alt="The Team page, listing each team member with their calendar colour, email and role" width="100%">
+      <br>Add your team and give each person their own calendar colour.
+    </td>
+  </tr>
+</table>
+
 ## What it does
 
 - **Calendar** with week and month views, weekends shrunk, client nicknames and estimate/real-hours badges on each job.
