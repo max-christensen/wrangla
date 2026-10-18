@@ -100,7 +100,7 @@ Everything below runs from a terminal in the project folder.
 
 1. Open your address. On the login screen click **First time setting this up? Create the admin account**.
 2. Enter your name, email and a password (8 or more characters). If you set a `SETUP_KEY` secret, the form also asks for it. This only works once; after the first admin exists it is disabled.
-3. You land on **Settings**. Enter your company name, address, phone, email and ABN or other registration number, upload your logo, and choose your colours. These show in the header, on the login screen and on printed reports. Until you upload a logo, the header shows the Wrangla W and your company name. You can change everything later from the Settings tab.
+3. You land on **Settings**. Enter your company name, address, phone, email and ABN or other registration number, upload your logo, and choose your colours. These show in the header, on the login screen and on printed reports. Your logo is shown next to your company name; until you upload one, the header shows the Wrangla W in its place. You can change everything later from the Settings tab.
 4. Go to **Team** and add each person with a name, email, starting password, role and calendar colour.
 5. Go to **Clients** and add your clients and their job sites, then start scheduling from **Calendar**.
 

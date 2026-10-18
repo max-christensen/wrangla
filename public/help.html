@@ -168,7 +168,7 @@
 <p>The <strong>Utilisation</strong> table compares estimated hours with logged hours, per person, for the current week and month.</p>
 
 <h2 id="export">Exporting to PDF</h2>
-<p>Both the calendar and the Reports tab have an <strong>Export PDF</strong> button. It opens your browser's print dialog with a clean version of what's on screen, headed with your company logo and details. Choose "Save as PDF" there to get a file.</p>
+<p>Both the calendar and the Reports tab have an <strong>Export PDF</strong> button. It opens your browser's print dialog with a clean version of what's on screen, headed with your company logo, name and details. Choose "Save as PDF" there to get a file.</p>
 
 <h2 id="mobile">Using it on your phone</h2>
 <p>Open the app's web address in your phone's browser. Workers on a phone get a plain list of their own jobs for the next 30 days (today first), and can tap a job to log time or add a note. Scheduling and dragging are done from a computer.</p>
@@ -180,7 +180,7 @@
 <ul>
   <li><strong>Company details</strong>: name, address, phone, email and your ABN or other registration number. These appear on printed reports.</li>
   <li><strong>Colours</strong>: pick a ready-made preset, or choose your own main colour (sidebar and buttons) and accent colour (links, highlights). Wrangla checks the contrast for you and won't let you save an accent colour that's too light to read. The sidebar text always switches between light and dark so it stays readable.</li>
-  <li><strong>Logo</strong>: upload your company logo (PNG, JPG, WebP, GIF or SVG, up to 2MB). It's shown at a fixed height, with its proportions kept, in the header, on the login screen and on printouts. Until you upload one, the Wrangla W and your company name are shown.</li>
+  <li><strong>Logo</strong>: upload your company logo (PNG, JPG, WebP, GIF or SVG, up to 2MB). It's shown at a fixed height, with its proportions kept, next to your company name in the header, on the login screen and on printouts. Until you upload one, the Wrangla W is used in its place.</li>
   <li><strong>Scheduling</strong>: whether multi-day jobs skip weekends.</li>
   <li><strong>Sign-in security</strong>: turn the emailed login code on or off. It's only available once your host has set up email sending.</li>
 </ul>
@@ -215,7 +215,7 @@ fetch('/api/public-settings').then(r => r.json()).then(s => {
   const name = s.company_name || 'Wrangla';
   const esc = t => t.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   document.getElementById('helpBrand').innerHTML = s.has_logo
-    ? `<img class="brand-logo" src="/api/logo?v=${encodeURIComponent(s.logo_version||'')}" alt="${esc(name)}">`
+    ? `<span class="brand-fallback"><img class="brand-logo" src="/api/logo?v=${encodeURIComponent(s.logo_version||'')}" alt=""><span>${esc(name)}</span></span>`
     : `<span class="brand-fallback"><span class="w-mark"></span><span>${esc(name)}</span></span>`;
 }).catch(() => {});
 </script>
