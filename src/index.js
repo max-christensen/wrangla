@@ -273,7 +273,9 @@ async function handleLogin(request, env) {
   if (!ok) return json({ error: "Invalid email or password" }, 401);
 
   const settings = await loadSettings(env);
-  if (!twoFactorOn(env, settings)) return startSession(user, env);
+  // The optional demo account (a viewer named in DEMO_LOGIN_EMAIL) signs in with just its password.
+  const isDemo = user.role === "viewer" && !!env.DEMO_LOGIN_EMAIL && user.email === env.DEMO_LOGIN_EMAIL.toLowerCase();
+  if (isDemo || !twoFactorOn(env, settings)) return startSession(user, env);
 
   // Password was right: email a code. No session exists until the code is confirmed.
   await env.DB.prepare("DELETE FROM login_codes WHERE expires_at < ?").bind(new Date().toISOString()).run();
@@ -374,6 +376,7 @@ async function handlePublicSettings(env) {
     accent_color: s.accent_color || DEFAULT_ACCENT,
     needs_setup: !admin,
     setup_key_required: !!env.SETUP_KEY,
+    ...(env.DEMO_LOGIN_EMAIL ? { demo_login_email: env.DEMO_LOGIN_EMAIL.toLowerCase() } : {}),
   });
 }
 
@@ -456,6 +459,9 @@ async function handleListUsers(env) {
   return json(results);
 }
 
+// users.role is free text; these are the three roles the app knows about.
+function cleanRole(role) { return role === "admin" || role === "viewer" ? role : "worker"; }
+
 async function handleCreateUser(request, env) {
   const { name, email, password, role, color } = await request.json();
   if (!name || !email || !password || password.length < 8) {
@@ -465,7 +471,7 @@ async function handleCreateUser(request, env) {
   try {
     const result = await env.DB.prepare(
       "INSERT INTO users (name, email, password_hash, role, color) VALUES (?, ?, ?, ?, ?)"
-    ).bind(name, email.toLowerCase(), hash, role === "admin" ? "admin" : "worker", color || "#3B6E71").run();
+    ).bind(name, email.toLowerCase(), hash, cleanRole(role), color || "#3B6E71").run();
     return json({ id: result.meta.last_row_id });
   } catch (e) {
     return json({ error: "That email is already in use" }, 400);
@@ -478,7 +484,7 @@ async function handleUpdateUser(request, env, id) {
   const values = [];
   if (body.name !== undefined) { fields.push("name = ?"); values.push(body.name); }
   if (body.email !== undefined) { fields.push("email = ?"); values.push(body.email.toLowerCase()); }
-  if (body.role !== undefined) { fields.push("role = ?"); values.push(body.role === "admin" ? "admin" : "worker"); }
+  if (body.role !== undefined) { fields.push("role = ?"); values.push(cleanRole(body.role)); }
   if (body.color !== undefined) { fields.push("color = ?"); values.push(body.color); }
   if (body.active !== undefined) { fields.push("active = ?"); values.push(body.active ? 1 : 0); }
   if (body.password) {
@@ -653,8 +659,8 @@ async function handleListAppointments(request, env, user) {
   `;
   const params = [];
 
-  if (user.role !== "admin") {
-    // workers see their own items plus unassigned ones
+  if (user.role !== "admin" && user.role !== "viewer") {
+    // workers see their own items plus unassigned ones (admins and viewers see everything)
     sql += ` AND (EXISTS (SELECT 1 FROM item_people ip WHERE ip.appointment_id = a.id AND ip.user_id = ?)
               OR NOT EXISTS (SELECT 1 FROM item_people ip WHERE ip.appointment_id = a.id))`;
     params.push(user.id);
@@ -952,6 +958,8 @@ async function handleDeleteAppointment(env, id) {
 
 // ---------- router ----------
 
+const READ_ONLY_MESSAGE = "This is a read-only account, so changes can't be saved.";
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -972,6 +980,9 @@ export default {
 
       const user = await getUser(request, env);
       if (!user) return json({ error: "Not logged in" }, 401);
+
+      // A viewer account is read-only: it may log in and out (handled above) but never save anything.
+      if (user.role === "viewer" && method !== "GET") return json({ error: READ_ONLY_MESSAGE }, 403);
 
       if (path === "/api/me" && method === "GET") return json(user);
 

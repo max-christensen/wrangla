@@ -56,6 +56,7 @@ Here's what Wrangla looks like with some made-up data for a small field services
 - **Company branding**: name, address, registration number, logo and colours, set from a Settings screen.
 - **Optional two-factor login**: password, then a 6-digit code emailed through [Resend](https://resend.com).
 - Workers on a phone get a plain list of their own jobs.
+- **Read-only Viewer accounts** that can see everything an admin sees but change nothing, plus an optional one-click demo login.
 
 ## What you need
 
@@ -101,7 +102,7 @@ Everything below runs from a terminal in the project folder.
 1. Open your address. On the login screen click **First time setting this up? Create the admin account**.
 2. Enter your name, email and a password (8 or more characters). If you set a `SETUP_KEY` secret, the form also asks for it. This only works once; after the first admin exists it is disabled.
 3. You land on **Settings**. Enter your company name, address, phone, email and ABN or other registration number, upload your logo, and choose your colours. These show in the header, on the login screen and on printed reports. Your logo is shown next to your company name; until you upload one, the header shows the Wrangla W in its place. You can change everything later from the Settings tab.
-4. Go to **Team** and add each person with a name, email, starting password, role and calendar colour.
+4. Go to **Team** and add each person with a name, email, starting password, role (Worker, Admin or Viewer) and calendar colour. A Viewer can look at everything but can't save any change, which suits an accountant or a manager who only wants to look.
 5. Go to **Clients** and add your clients and their job sites, then start scheduling from **Calendar**.
 
 The in-app **Help** page explains each screen in plain language.
@@ -118,6 +119,10 @@ Set them with the Wrangler tool, or in the Cloudflare dashboard under **Workers 
 npx wrangler secret put SETUP_KEY
 npx wrangler secret put SESSION_SECRET
 ```
+
+## Read-only demo login (optional)
+
+To let people look around without being able to change anything, add a team member with the role **Viewer (read-only)** and set a plain variable called `DEMO_LOGIN_EMAIL` to that person's email address (in the Cloudflare dashboard under **Settings → Variables and Secrets**, or `[vars]` in `wrangler.toml`). The login screen then shows a short line saying it's a read-only demo and a **Try the demo** button. The button signs in with the password `demo1234`, so give the viewer that password, and only do this on a copy that holds nothing private. A demo viewer also skips the emailed code. When the variable isn't set, nothing changes.
 
 ## Two-factor login (optional)
 
