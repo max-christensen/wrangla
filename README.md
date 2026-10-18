@@ -47,9 +47,14 @@ Here's what Wrangla looks like with some made-up data for a small field services
   </tr>
 </table>
 
+The Client view lists one client's jobs grouped by job site, upcoming first, with the past ones tucked away underneath.
+
+![The Client view, with a client's upcoming jobs grouped by site and the past jobs collapsed below](docs/screenshots/client-view.jpg)
+
 ## What it does
 
 - **Calendar** with week and month views, weekends shrunk, client nicknames and estimate/real-hours badges on each job.
+- **Client view**: pick a client (or see them all) and get their jobs as a list grouped by job site, upcoming first, with past jobs tucked away and a search box.
 - **Appointments and tasks**, at head office or at a client's job site, assigned to a person or left unassigned (shown in red).
 - **Multi-day jobs** that show as "Day 2 of 3" on each day, with an option to skip weekends.
 - **Recurring jobs** (weekly, fortnightly, monthly) and **drag to another day** for admins.

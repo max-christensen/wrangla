@@ -120,6 +120,35 @@
   .drop-target { outline: 2px dashed var(--office); outline-offset: -2px; background: var(--office-bg); }
   .card[draggable=true], .month-chip[draggable=true] { cursor: grab; }
   #workerList { display: none; }
+  /* Client view: replaces the calendar grids, the period buttons, the person filter and the utilisation panel */
+  #clientView { display: none; }
+  #view-calendar.client-mode #clientView { display: block; }
+  #view-calendar.client-mode :is(#weekGrid, #monthGrid, #monthHeader, #calUtilPanel, #prevPeriod, #thisPeriod, #nextPeriod, #workerFilter, #exportBtn) { display: none !important; }
+  .cv-toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .cv-toolbar select { flex: 0 1 320px; min-width: 0; }
+  .cv-toolbar input { flex: 1 1 220px; min-width: 0; }
+  .cv-summary { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
+  .cv-empty { color: var(--muted); font-size: 13.5px; margin: 8px 0; }
+  .cv-group { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 14px; overflow: hidden; }
+  .cv-site { margin: 0; padding: 9px 14px; font-size: 13px; font-weight: 600; color: var(--ink-soft); background: var(--bg); border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+  .cv-count { display: inline-block; margin-left: 6px; padding: 0 7px; border-radius: 10px; background: var(--border); color: var(--ink-soft); font-size: 11px; font-weight: 600; }
+  .cv-row { display: grid; grid-template-columns: 170px minmax(0, 1fr) 120px 190px; gap: 4px 14px; align-items: center; padding: 10px 14px; border-top: 1px solid var(--border); font-size: 13.5px; cursor: pointer; }
+  .cv-site + .cv-row { border-top: none; }
+  .cv-row:hover, .cv-row:focus-visible { background: var(--office-bg); outline: none; }
+  .cv-when { color: var(--ink-soft); }
+  .cv-title { font-weight: 500; overflow-wrap: anywhere; }
+  .cv-type { font-weight: 400; color: var(--muted); font-size: 12.5px; }
+  .cv-who { overflow-wrap: anywhere; }
+  .cv-row .pill { margin-top: 0; }
+  .pill.cv-late { background: #FBEEEC; color: var(--danger); }
+  .pill.cv-unassigned { background: #FBEEEC; color: var(--danger); }
+  details.cv-past { margin-top: 6px; }
+  details.cv-past > summary, details.cv-client > summary { cursor: pointer; font-weight: 600; font-size: 14px; padding: 8px 2px; color: var(--ink-soft); }
+  details.cv-client { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; padding: 4px 14px 10px; }
+  details.cv-client > summary { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; color: var(--ink); }
+  .cv-client-name { overflow-wrap: anywhere; }
+  .cv-upcoming { font-weight: 400; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+  details.cv-past .cv-group { margin-top: 8px; }
   #view-calendar.phone-list > :not(#workerList) { display: none !important; }
   #view-calendar.phone-list #workerList { display: block; }
   #workerList h3.list-day { font-size: 13px; margin: 18px 0 8px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.04em; }
@@ -284,6 +313,13 @@
     .day-col.weekend .card .title { font-size: inherit; }
     .month-cell { min-height: unset; }
     .modal { width: 100%; max-width: 380px; }
+    .cv-toolbar select, .cv-toolbar input { flex: 1 1 100%; }
+    .cv-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "when status" "title title" "who who"; padding: 10px 12px; }
+    .cv-when { grid-area: when; font-size: 12.5px; }
+    .cv-status { grid-area: status; justify-self: end; }
+    .cv-title { grid-area: title; }
+    .cv-who { grid-area: who; font-size: 12.5px; color: var(--ink-soft); }
+    details.cv-client { padding: 4px 10px 10px; }
   }
 </style>
 </head>
@@ -359,6 +395,7 @@
           <select id="viewMode">
             <option value="week">Week view</option>
             <option value="month">Month view</option>
+            <option value="client">Client view</option>
           </select>
           <select id="workerFilter" style="display:none"></select>
           <button id="exportBtn">Export PDF</button>
@@ -371,7 +408,15 @@
       </div>
       <div class="month-grid" id="monthGrid" style="display:none"></div>
 
-      <div style="margin-top:24px; border-top:1px solid var(--border); padding-top:16px;">
+      <div id="clientView">
+        <div class="cv-toolbar">
+          <select id="cvClient" aria-label="Client"></select>
+          <input type="search" id="cvSearch" placeholder="Search jobs or sites" aria-label="Search jobs or sites">
+        </div>
+        <div id="cvBody"></div>
+      </div>
+
+      <div id="calUtilPanel" style="margin-top:24px; border-top:1px solid var(--border); padding-top:16px;">
         <h3 style="font-size:14px; margin:0 0 4px; color:var(--ink-soft);">Utilisation</h3>
         <p id="calUtilizationLabel" style="font-size:12px; color:var(--muted); margin:0 0 10px;"></p>
         <div id="calUtilizationHighlight"></div>
@@ -1202,10 +1247,145 @@ async function renderWorkerList() {
   if (!any) box.insertAdjacentHTML('beforeend', '<p style="color:var(--muted);">Nothing scheduled for you in the next 30 days.</p>');
 }
 
+// ---------- client view ----------
+// One client's jobs (or every client's) as a list grouped by job site: upcoming first, past ones tucked under "Past".
+// Rows open the same job window the week and month views use.
+
+let cvClientId = '';          // '' means All clients
+let cvItems = [];             // the jobs loaded for the picker's current choice
+const cvOpen = new Set();     // which collapsible parts are open, so a refresh keeps them that way
+let cvRenderTicket = 0;
+
+function cvDateText(iso) {
+  const d = parseLocalDate(iso);
+  return dayLabel(d) + (d.getFullYear() !== new Date().getFullYear() ? ' ' + d.getFullYear() : '');
+}
+function cvWhen(a) {
+  const first = a.dates[0], last = a.dates[a.dates.length - 1];
+  if (!first) return '';
+  const text = first === last ? cvDateText(first) : `${cvDateText(first)} – ${cvDateText(last)}`;
+  return a.activity_type === 'task' ? 'Due ' + text : text;
+}
+function cvSiteOf(a) {
+  if (a.activity_type === 'task') return { key: 'task', label: 'Tasks' };
+  if (a.site_id) return { key: 's' + a.site_id, label: a.site_name || 'Job site' };
+  if (a.location_type === 'project_site' && a.site_address) return { key: 'a:' + a.site_address, label: a.site_address };
+  return { key: 'office', label: 'Head office' };
+}
+function cvLastDate(a) { return a.dates[a.dates.length - 1] || ''; }
+
+function cvRowHtml(a) {
+  const last = cvLastDate(a), isPast = last < fmtDate(new Date());
+  const status = a.status === 'completed' ? '<span class="pill done">Completed</span>'
+    : isPast ? '<span class="pill cv-late">Not completed</span>'
+    : (a.entries || []).length ? '<span class="pill office">In progress</span>'
+    : '<span class="pill office">Scheduled</span>';
+  const who = (a.people || []).length ? escapeHtml(a.people.map(p => p.name).join(', '))
+    : '<span class="pill cv-unassigned">Unassigned</span>';
+  return `<div class="cv-row" role="button" tabindex="0" data-id="${a.id}">
+    <div class="cv-when">${escapeHtml(cvWhen(a))}</div>
+    <div class="cv-title">${escapeHtml(a.title)}${a.job_type ? `<span class="cv-type"> · ${escapeHtml(a.job_type)}</span>` : ''}</div>
+    <div class="cv-status">${status}</div>
+    <div class="cv-who">${who}</div>
+  </div>`;
+}
+
+// Jobs grouped by site; groups come out in the order of their first job in the list given.
+function cvGroupsHtml(items) {
+  const groups = new Map();
+  for (const a of items) {
+    const s = cvSiteOf(a);
+    if (!groups.has(s.key)) groups.set(s.key, { label: s.label, jobs: [] });
+    groups.get(s.key).jobs.push(a);
+  }
+  return [...groups.values()].map(g => `
+    <div class="cv-group">
+      <h4 class="cv-site">${escapeHtml(g.label)} <span class="cv-count">${g.jobs.length}</span></h4>
+      ${g.jobs.map(cvRowHtml).join('')}
+    </div>`).join('');
+}
+
+function cvListHtml(items, key, forceOpen) {
+  const today = fmtDate(new Date());
+  const upcoming = items.filter(a => cvLastDate(a) >= today).sort((a, b) => (a.dates[0] || '').localeCompare(b.dates[0] || '') || a.id - b.id);
+  const past = items.filter(a => cvLastDate(a) < today).sort((a, b) => cvLastDate(b).localeCompare(cvLastDate(a)) || b.id - a.id);
+  const pastKey = 'past:' + key;
+  return (upcoming.length ? cvGroupsHtml(upcoming) : '<p class="cv-empty">No upcoming jobs.</p>') +
+    (past.length ? `<details class="cv-past" data-key="${pastKey}"${forceOpen || cvOpen.has(pastKey) ? ' open' : ''}>
+      <summary>Past <span class="cv-count">${past.length}</span></summary>${cvGroupsHtml(past)}</details>` : '');
+}
+
+function cvFiltered() {
+  const q = document.getElementById('cvSearch').value.trim().toLowerCase();
+  if (!q) return { items: cvItems, searching: false };
+  return { items: cvItems.filter(a => a.title.toLowerCase().includes(q) || cvSiteOf(a).label.toLowerCase().includes(q)), searching: true };
+}
+
+function cvDraw() {
+  const box = document.getElementById('cvBody');
+  const { items, searching } = cvFiltered();
+  const today = fmtDate(new Date());
+  if (cvClientId) {
+    const name = (clients.find(c => String(c.id) === String(cvClientId)) || {}).name || '';
+    const up = items.filter(a => cvLastDate(a) >= today).length;
+    box.innerHTML = `<p class="cv-summary">${escapeHtml(name)}: ${up} upcoming, ${items.length - up} past${searching ? ' (matching your search)' : ''}.</p>` +
+      (items.length ? cvListHtml(items, 'c' + cvClientId, searching) : `<p class="cv-empty">${searching ? 'No jobs match your search.' : 'No jobs for this client yet.'}</p>`);
+    return;
+  }
+  const byClient = new Map();
+  for (const a of items) { const k = a.client_id || 0; if (!byClient.has(k)) byClient.set(k, []); byClient.get(k).push(a); }
+  const rows = [...clients.map(c => ({ id: c.id, name: c.name })), { id: 0, name: 'No client' }]
+    .map(c => ({ ...c, jobs: byClient.get(c.id) || [] }))
+    .filter(c => (c.id !== 0 || c.jobs.length) && (!searching || c.jobs.length));
+  box.innerHTML = rows.length ? rows.map(c => {
+    const up = c.jobs.filter(a => cvLastDate(a) >= today).length, key = 'c' + c.id;
+    return `<details class="cv-client" data-key="${key}"${searching || cvOpen.has(key) ? ' open' : ''}>
+      <summary><span class="cv-client-name">${escapeHtml(c.name)}</span><span class="cv-upcoming">${up} upcoming</span></summary>
+      ${c.jobs.length ? cvListHtml(c.jobs, key, searching) : '<p class="cv-empty">No jobs yet.</p>'}
+    </details>`;
+  }).join('') : '<p class="cv-empty">No jobs match your search.</p>';
+}
+
+async function renderClientView() {
+  document.getElementById('weekLabel').textContent = 'Client view';
+  const sel = document.getElementById('cvClient');
+  const keep = cvClientId;
+  sel.innerHTML = '<option value="">All clients</option>' + clients.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  sel.value = keep; cvClientId = sel.value;
+  const ticket = ++cvRenderTicket;
+  const items = await api('/appointments' + (cvClientId ? `?client_id=${encodeURIComponent(cvClientId)}` : ''));
+  if (ticket !== cvRenderTicket) return;      // a newer request has taken over
+  cvItems = items.filter(a => a.dates && a.dates.length);
+  cvDraw();
+}
+
+document.getElementById('cvClient').addEventListener('change', (e) => { cvClientId = e.target.value; renderClientView(); });
+document.getElementById('cvSearch').addEventListener('input', cvDraw);
+const cvBox = document.getElementById('clientView');
+cvBox.addEventListener('toggle', (e) => {
+  const key = e.target.dataset && e.target.dataset.key;
+  if (!key || document.getElementById('cvSearch').value.trim()) return; // searching opens things itself; don't remember that
+  if (e.target.open) cvOpen.add(key); else cvOpen.delete(key);
+}, true);
+cvBox.addEventListener('click', (e) => {
+  const row = e.target.closest('.cv-row');
+  if (row) openActivityModal(cvItems.find(a => a.id === parseInt(row.dataset.id, 10)));
+});
+cvBox.addEventListener('keydown', (e) => {
+  const row = e.target.closest && e.target.closest('.cv-row');
+  if (row && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); row.click(); }
+});
+// "New" from the Client view starts with the chosen client filled in.
+document.getElementById('newActivityBtn').addEventListener('click', () => {
+  if (viewMode === 'client' && cvClientId) { document.getElementById('fClient').value = cvClientId; updateSiteOptions(); }
+});
+
 async function renderCurrentView() {
   const phone = isPhoneWorker();
   document.getElementById('view-calendar').classList.toggle('phone-list', phone);
+  document.getElementById('view-calendar').classList.toggle('client-mode', viewMode === 'client');
   if (phone) { await renderWorkerList(); return; }
+  if (viewMode === 'client') { await renderClientView(); return; }
   await (viewMode === 'week' ? renderWeek() : renderMonth());
   renderUtilization();
 }

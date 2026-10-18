@@ -646,6 +646,7 @@ async function handleListAppointments(request, env, user) {
   const start = url.searchParams.get("start");
   const end = url.searchParams.get("end");
   const assignedTo = url.searchParams.get("assigned_to");
+  const clientId = url.searchParams.get("client_id"); // optional: only this client's items (used by the Client view)
   const skipWeekends = (await loadSettings(env)).skip_weekends === "1";
   const startExpr = "COALESCE(a.scheduled_date, a.due_date)";
 
@@ -667,6 +668,11 @@ async function handleListAppointments(request, env, user) {
   } else if (assignedTo) {
     sql += " AND EXISTS (SELECT 1 FROM item_people ip WHERE ip.appointment_id = a.id AND ip.user_id = ?)";
     params.push(assignedTo);
+  }
+
+  if (clientId) {
+    sql += " AND a.client_id = ?";
+    params.push(clientId);
   }
 
   // Coarse SQL filter (a multi-day item can start before the range and run into it); exact check below.

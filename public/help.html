@@ -58,6 +58,7 @@
   <ul>
     <li><a href="#login">Logging in</a></li>
     <li><a href="#calendar">The calendar</a></li>
+    <li><a href="#clientview">Client view</a></li>
     <li><a href="#newjob">Creating a job or task</a></li>
     <li><a href="#multiday">Jobs that run for several days</a></li>
     <li><a href="#drag">Moving jobs by dragging</a></li>
@@ -85,15 +86,27 @@
 <div class="note">If the code email doesn't arrive, check your junk folder, then ask your admin to check the email setup.</div>
 
 <h2 id="calendar">The calendar</h2>
-<p>The Calendar tab is the home screen. There are two views:</p>
+<p>The Calendar tab is the home screen. There are three views:</p>
 <ul>
   <li><strong>Week view</strong>: seven days across, each job shown as a card. Saturday and Sunday are shrunk down since weekend work is rare.</li>
   <li><strong>Month view</strong>: the whole month, with each job as a small chip showing its title, client, who it's for and where. On the chips, <strong>E</strong> is the estimated hours for that day and <strong>R</strong> is the real hours logged.</li>
+  <li><strong>Client view</strong>: all the jobs for one client in a single list, grouped by job site. See <a href="#clientview">Client view</a> below.</li>
 </ul>
 <p>Switch between them with the dropdown next to <strong>Prev / Today / Next</strong>. In month view, if a day has more than 3 jobs you'll see a <strong>+N more</strong> link. Click it to jump into that day's week view.</p>
 <p>Admins and viewers also get an <strong>Everyone</strong> dropdown to filter the calendar down to one person.</p>
 <p>Under the calendar, the <strong>Utilisation</strong> table shows each person's estimated and logged hours for the week and month you're looking at.</p>
 <p>Card colours: a teal (or your accent colour) left edge means head office, orange means a job site, green means completed, and red means <a href="#unassigned">unassigned</a>.</p>
+
+<h2 id="clientview">Client view</h2>
+<p>Choose <strong>Client view</strong> from the dropdown on the Calendar tab when you want to see everything for one client in one place, instead of hunting through the weeks.</p>
+<ul>
+  <li>Pick a client from the list at the top. Their jobs are grouped by job site. Jobs at a one-off address, jobs at head office and tasks each get their own group.</li>
+  <li><strong>Upcoming</strong> jobs come first, with the soonest at the top. Jobs that have already happened sit below under <strong>Past</strong>, which starts closed. Click it to open it.</li>
+  <li>Each row shows the date, the job, whether it's scheduled or completed, and who's on it. Click a row to open the job, exactly like clicking a card on the calendar.</li>
+  <li>Choose <strong>All clients</strong> to see one row per client with how many upcoming jobs they have. Click a client to open its list.</li>
+  <li>The search box narrows the list to jobs whose title or site matches what you type. While you search, matching clients and their Past lists open by themselves.</li>
+</ul>
+<p>You see the same jobs here as on the calendar: workers see their own jobs and any unassigned ones, admins and viewers see everything, and viewers can open a job to read it but can't change anything. On a phone it fits the screen, one job per block. (Workers on a phone get their plain <a href="#mobile">list of their own jobs</a> instead.)</p>
 
 <h2 id="newjob">Creating a job or task</h2>
 <p>Click <strong>New</strong> from the calendar. There are two types:</p>
