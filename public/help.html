@@ -69,7 +69,7 @@
     <li><a href="#clients">Clients</a></li>
     <li><a href="#sites">Job sites</a></li>
     <li><a href="#team">Team</a></li>
-    <li><a href="#reports">Reports &amp; utilisation</a></li>
+    <li><a href="#reports">Reports</a></li>
     <li><a href="#export">Exporting to PDF</a></li>
     <li><a href="#mobile">Using it on your phone</a></li>
     <li><a href="#settings">Settings (admins)</a></li>
@@ -175,13 +175,25 @@
 <p class="pill admin">Admin only</p>
 <p>Add, edit or deactivate team members here. Set each person's <strong>Role</strong> to Worker, Admin or <strong>Viewer (read-only)</strong>; you can have as many admins as you like. A viewer can look at everything an admin can (the calendar, clients, team, reports, settings, and each job's notes and logged times) but can't change anything. It's handy for an accountant, a manager who only wants to look, or a demo login. Each person also gets a <strong>calendar colour</strong>, used on their jobs. Deactivating someone keeps their history but stops them logging in.</p>
 
-<h2 id="reports">Reports &amp; utilisation</h2>
-<p>Pick a date range, optionally narrow it to one person and/or one client, then click <strong>Run report</strong>. It lists the work by person, one row per job per day, with the date, type of work, client, location, the times logged, the estimate for that day and the duration. Each person's hours are totalled at the top of their section. Everything is read from the hours logged against each day.</p>
-<p>It's the quickest way to answer "how much time did we spend on this client this month" for invoicing. Admins can run it for anyone. Workers see their own work.</p>
-<p>The <strong>Utilisation</strong> table compares estimated hours with logged hours, per person, for the current week and month.</p>
+<h2 id="reports">Reports</h2>
+<p>The Reports tab is one page with a <strong>Report</strong> picker at the top. Choose a report, set the dates (or pick <strong>This week</strong>, <strong>Last month</strong> and so on from the Period list), and narrow it down by person, client or job type if you like. The report updates as you change things.</p>
+<ul>
+  <li><strong>Hours by person and client</strong>: the work by person, one row per job per day, with the times logged, the estimate for that day and the real time. Each person's hours are totalled at the top of their section.</li>
+  <li><strong>Utilisation</strong>: for each person, the hours estimated, the real hours logged and the percentage between the two, for any dates you choose.</li>
+  <li><strong>Person schedule</strong>: a run sheet for one person. Date, job, client, job site address, site contact and phone, so they have everything they need on one page.</li>
+  <li><strong>Team schedule</strong>: everyone's jobs, grouped by day.</li>
+  <li><strong>Estimate vs real</strong>: every job with its estimated hours, the real hours logged and the difference, with totals by person, by client and by job type.</li>
+  <li><strong>Client statement</strong>: everything done for one client in the period, with your company details on top, ready to send or invoice from. Choose the client first.</li>
+  <li><strong>Needs attention</strong>: completed jobs with no times logged, past jobs that were never marked complete, and upcoming jobs with nobody assigned.</li>
+  <li><strong>Job list</strong>: every job in the period with all its details. It's mainly there for the CSV download.</li>
+</ul>
+<p>Every report has a <strong>Print / PDF</strong> button and a <strong>Download CSV</strong> button. Print opens your browser's print dialog with your company name, logo, address and registration number from Settings at the top, followed by the dates and when the report was run. Choose "Save as PDF" there to get a file. The CSV opens in Excel or Google Sheets, with dates written like 2026-10-19 and hours as decimals (1.5 means an hour and a half). For the reports that add up hours you can choose <strong>One row per job</strong> or <strong>One row per day</strong> for the CSV.</p>
+<p><strong>A dash means nothing was logged.</strong> A job with no times logged shows a dash (&ndash;) for its real hours, never zero. If any completed jobs in the period have no times logged, a yellow line at the top of the report tells you how many, with a link to the <strong>Needs attention</strong> list so you can fix them. That keeps a missing entry from quietly making your totals look low.</p>
+<p>Workers only see their own jobs and hours in reports. Admins see everyone's, and viewers see the same as admins but can't change anything. Viewers can still print and download. The long tables scroll inside their own box, so reports work on a phone too.</p>
+<p>The calendar still has its own <strong>Utilisation</strong> table underneath, for the week and month you're looking at.</p>
 
 <h2 id="export">Exporting to PDF</h2>
-<p>Both the calendar and the Reports tab have an <strong>Export PDF</strong> button. It opens your browser's print dialog with a clean version of what's on screen, headed with your company logo, name and details. Choose "Save as PDF" there to get a file.</p>
+<p>The calendar has an <strong>Export PDF</strong> button, and every report has a <strong>Print / PDF</strong> button (see <a href="#reports">Reports</a>). Each opens your browser's print dialog with a clean version of what's on screen, headed with your company logo, name and details. Choose "Save as PDF" there to get a file.</p>
 
 <h2 id="mobile">Using it on your phone</h2>
 <p>Open the app's web address in your phone's browser. Workers on a phone get a plain list of their own jobs for the next 30 days (today first), and can tap a job to log time or add a note. Scheduling and dragging are done from a computer.</p>
@@ -216,7 +228,7 @@
     <tr><td>Upload attachments / post team notes</td><td>✔</td><td>✔</td><td>—</td></tr>
     <tr><td>Manage clients &amp; job sites</td><td>—</td><td>✔</td><td>— (can view them)</td></tr>
     <tr><td>Manage team members</td><td>—</td><td>✔</td><td>— (can view them)</td></tr>
-    <tr><td>Run reports</td><td>✔ (own work)</td><td>✔ (anyone's)</td><td>✔ (anyone's)</td></tr>
+    <tr><td>Run, print and download reports</td><td>✔ (own work)</td><td>✔ (anyone's)</td><td>✔ (anyone's)</td></tr>
     <tr><td>Change company settings, logo and colours</td><td>—</td><td>✔</td><td>— (can view them)</td></tr>
     <tr><td>Delete a job or a whole series</td><td>—</td><td>✔</td><td>—</td></tr>
   </tbody>

@@ -716,6 +716,78 @@ async function handleListAppointments(request, env, user) {
   return json(items);
 }
 
+// ---- report data: the jobs, people and logged times behind the Reports page ----
+// Workers only ever get their own jobs and their own hours, whatever the request asks for. Admins and viewers get
+// everything, and may narrow it by person, client and job type. Read-only: nothing here changes data.
+
+function validIsoDate(s) {
+  return typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(new Date(s + "T00:00:00Z").getTime());
+}
+
+async function handleReportData(request, env, user) {
+  const url = new URL(request.url);
+  const start = url.searchParams.get("start");
+  const end = url.searchParams.get("end");
+  if (!validIsoDate(start) || !validIsoDate(end) || start > end) return json({ error: "Pick a start and end date" }, 400);
+  if (addDaysIso(start, 1100) < end) return json({ error: "Pick a shorter date range (about three years at most)" }, 400);
+
+  const seesAll = user.role === "admin" || user.role === "viewer";
+  const personId = seesAll ? parseInt(url.searchParams.get("person_id"), 10) || null : user.id;
+  const clientId = parseInt(url.searchParams.get("client_id"), 10) || null;
+  const jobType = (url.searchParams.get("job_type") || "").trim();
+  const skipWeekends = (await loadSettings(env)).skip_weekends === "1";
+  const startExpr = "COALESCE(a.scheduled_date, a.due_date)";
+
+  let sql = `
+    SELECT a.id, a.title, a.client_id, a.site_id, a.activity_type, a.job_type, a.location_type, a.site_address,
+           a.scheduled_date, a.due_date, a.status, a.estimate_minutes, a.days, a.completed_at, a.notes, a.series_id,
+           c.name AS client_name, c.nickname AS client_nickname, c.address AS client_address,
+           c.contact_name AS client_contact_name, c.phone AS client_phone,
+           s.name AS site_name, s.address AS site_full_address, s.contact_name AS site_contact_name, s.phone AS site_phone
+    FROM appointments a
+    LEFT JOIN clients c ON c.id = a.client_id
+    LEFT JOIN project_sites s ON s.id = a.site_id
+    WHERE ${startExpr} IS NOT NULL
+      AND ${startExpr} <= ? AND date(${startExpr}, '+' || (a.days * 2 + 3) || ' days') >= ?`;
+  const params = [end, start];
+  if (personId) {
+    sql += " AND EXISTS (SELECT 1 FROM item_people ip WHERE ip.appointment_id = a.id AND ip.user_id = ?)";
+    params.push(personId);
+  }
+  if (clientId) { sql += " AND a.client_id = ?"; params.push(clientId); }
+  if (jobType) { sql += " AND a.job_type = ? COLLATE NOCASE"; params.push(jobType); }
+  sql += ` ORDER BY ${startExpr}, a.id`;
+  const { results: items } = await env.DB.prepare(sql).bind(...params).all();
+
+  // Logged times for every day of these jobs (a job can start before the range and run into it), narrowed to the
+  // person when one is asked for and always to the worker themself for a worker.
+  let esql = `SELECT te.appointment_id, te.user_id, u.name AS user_name, te.work_date, te.start_time, te.end_time, te.minutes
+    FROM time_entries te JOIN users u ON u.id = te.user_id WHERE te.work_date BETWEEN ? AND ?`;
+  const eparams = [addDaysIso(start, -120), addDaysIso(end, 120)];
+  if (personId) { esql += " AND te.user_id = ?"; eparams.push(personId); }
+  const { results: entries } = await env.DB.prepare(esql + " ORDER BY te.work_date, te.id").bind(...eparams).all();
+  const entriesByItem = {};
+  for (const e of entries) (entriesByItem[e.appointment_id] ||= []).push({
+    user_id: e.user_id, user_name: e.user_name, work_date: e.work_date, start_time: e.start_time, end_time: e.end_time, minutes: e.minutes,
+  });
+
+  const { results: ppl } = await env.DB.prepare(
+    "SELECT ip.appointment_id, u.id, u.name FROM item_people ip JOIN users u ON u.id = ip.user_id" + (seesAll ? "" : " WHERE ip.user_id = ?") + " ORDER BY ip.rowid"
+  ).bind(...(seesAll ? [] : [user.id])).all();
+  const peopleByItem = {};
+  for (const r of ppl) (peopleByItem[r.appointment_id] ||= []).push({ id: r.id, name: r.name });
+
+  const out = [];
+  for (const a of items) {
+    a.dates = itemDates(a.scheduled_date || a.due_date, a.days, skipWeekends);
+    a.entries = entriesByItem[a.id] || [];
+    a.people = peopleByItem[a.id] || [];
+    if (!a.dates.some(d => d >= start && d <= end) && !a.entries.some(e => e.work_date >= start && e.work_date <= end)) continue;
+    out.push(a);
+  }
+  return json(out);
+}
+
 // ---- people on an item: one row per person in item_people (the form picks one for now) ----
 
 function parsePeople(b, user) {
@@ -1066,6 +1138,7 @@ export default {
         return handleDeleteSite(env, siteMatch[1]);
       }
 
+      if (path === "/api/report-data" && method === "GET") return handleReportData(request, env, user);
       if (path === "/api/appointments" && method === "GET") return handleListAppointments(request, env, user);
       if (path === "/api/appointments" && method === "POST") return handleCreateAppointment(request, env, user);
       if (path === "/api/appointments/recurring" && method === "POST") return handleCreateRecurring(request, env, user);

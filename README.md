@@ -31,8 +31,8 @@ Here's what Wrangla looks like with some made-up data for a small field services
       <br>Open any job to change it, log the real start and finish times, or add notes.
     </td>
     <td width="50%" valign="top">
-      <img src="docs/screenshots/reports.jpg" alt="The Reports page, listing each person's jobs with estimated and logged hours" width="100%">
-      <br>Reports total up the hours by person and client, ready for invoicing.
+      <img src="docs/screenshots/reports-estimate-vs-real.jpg" alt="The Reports page showing the Estimate vs real report, with every job's estimated and real hours and the difference, and totals underneath" width="100%">
+      <br>One Reports page with a report picker. Print any report or download it as a CSV.
     </td>
   </tr>
   <tr>
@@ -51,6 +51,10 @@ The Client view lists one client's jobs grouped by job site, upcoming first, wit
 
 ![The Client view, with a client's upcoming jobs grouped by site and the past jobs collapsed below](docs/screenshots/client-view.jpg)
 
+The Client statement report lists everything done for one client in a period, with your company details on top when you print it.
+
+![The Client statement report, listing a client's jobs for the month with the hours on each and a total](docs/screenshots/reports-client-statement.jpg)
+
 ## What it does
 
 - **Calendar** with week and month views, weekends shrunk, client nicknames and estimate/real-hours badges on each job.
@@ -58,7 +62,8 @@ The Client view lists one client's jobs grouped by job site, upcoming first, wit
 - **Appointments and tasks**, at head office or at a client's job site, assigned to a person or left unassigned (shown in red).
 - **Multi-day jobs** that show as "Day 2 of 3" on each day, with an option to skip weekends.
 - **Recurring jobs** (weekly, fortnightly, monthly) and **drag to another day** for admins.
-- **Time logging per day**, reports by person and client, a utilisation panel, and PDF export through the print dialog.
+- **Time logging per day**, a utilisation panel under the calendar, and PDF export of the calendar through the print dialog.
+- **Reports** from one page: hours by person and client, utilisation, person and team schedules, estimate vs real, a client statement to invoice from, a needs-attention list and a full job list. Each one prints or saves as a PDF with your company details on top, and downloads as a CSV. Workers only ever see their own.
 - **Notes and attachments** (photos, PDFs) on every job.
 - **Company branding**: name, address, registration number, logo and colours, set from a Settings screen.
 - **Optional two-factor login**: password, then a 6-digit code emailed through [Resend](https://resend.com).

@@ -245,16 +245,31 @@
   .who-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
 
   table.admin-table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-  table.report-table { table-layout: fixed; }
-  table.report-table th, table.report-table td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  table.report-table col.col-date { width: 8%; }
-  table.report-table col.col-job { width: 19%; }
-  table.report-table col.col-type { width: 9%; }
-  table.report-table col.col-client { width: 12%; }
-  table.report-table col.col-location { width: 14%; }
-  table.report-table col.col-time { width: 14%; }
-  table.report-table col.col-estimate { width: 11%; }
-  table.report-table col.col-duration { width: 13%; }
+  /* Reports page */
+  .rpt-controls { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 10px 14px; margin-bottom: 12px; }
+  .rpt-field { min-width: 0; }
+  .rpt-field label { display: block; margin: 0 0 3px; font-size: 12px; color: var(--muted); }
+  .rpt-field select, .rpt-field input { width: 100%; min-width: 0; }
+  .rpt-field.rpt-wide { grid-column: span 2; }
+  .rpt-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .rpt-actions label { margin: 0; display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
+  .rpt-actions button:disabled { opacity: 0.5; cursor: default; }
+  .rpt-hint { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
+  .rpt-hint:empty { display: none; }
+  .rpt-warn { background: #FFF6E5; border-left: 3px solid #D9A400; border-radius: 4px; padding: 10px 14px; margin-bottom: 14px; font-size: 13.5px; }
+  .rpt-warn a { color: var(--office); font-weight: 600; }
+  .rpt-client { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 14px; font-size: 13.5px; line-height: 1.5; }
+  .rpt-section { margin-bottom: 22px; max-width: 100%; }
+  .rpt-section h3 { margin: 0 0 8px; font-size: 15px; overflow-wrap: anywhere; }
+  .rpt-scroll { overflow: auto; max-width: 100%; max-height: 68vh; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+  .rpt-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .rpt-table th, .rpt-table td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .rpt-table th { position: sticky; top: 0; z-index: 1; background: var(--surface); color: var(--muted); font-weight: 500; white-space: nowrap; box-shadow: 0 1px 0 var(--border); }
+  .rpt-table .num { text-align: right; white-space: nowrap; }
+  .rpt-table tfoot td { position: sticky; bottom: 0; background: var(--bg); font-weight: 600; border-top: 2px solid var(--border); border-bottom: none; }
+  .rpt-table.wide td { white-space: nowrap; max-width: 320px; overflow: hidden; text-overflow: ellipsis; }
+  .rpt-empty { color: var(--muted); font-size: 13.5px; margin: 8px 0 16px; }
+  .rpt-note { color: var(--ink-soft); font-size: 12.5px; margin: 6px 0 0; }
   table.admin-table th, table.admin-table td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 13.5px; }
   table.admin-table th { color: var(--muted); font-weight: 500; }
 
@@ -290,6 +305,21 @@
     #printArea table { width: 100%; border-collapse: collapse; font-size: 12px; }
     #printArea th, #printArea td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #ccc; }
     #printArea th { color: #555; }
+    #printArea .rpt-section { margin-bottom: 14px; }
+    #printArea .rpt-section h3 { font-size: 13.5px; margin: 10px 0 4px; }
+    #printArea .rpt-scroll { max-height: none; overflow: visible; border: none; background: none; }
+    #printArea .rpt-table { font-size: 11px; }
+    #printArea .rpt-table th { position: static; background: none; box-shadow: none; }
+    #printArea .rpt-table td, #printArea .rpt-table th { padding: 4px 6px; vertical-align: top; }
+    #printArea .rpt-table .num { text-align: right; white-space: nowrap; }
+    #printArea .rpt-table.wide { font-size: 9.5px; }
+    #printArea .rpt-table.wide td { white-space: normal; max-width: none; overflow: visible; }
+    #printArea .rpt-table tfoot td { position: static; background: none; font-weight: 700; border-top: 2px solid #333; }
+    #printArea thead { display: table-header-group; }
+    #printArea tr { break-inside: avoid; }
+    #printArea .rpt-warn { border: 1px solid #999; border-left: 3px solid #333; background: none; padding: 6px 10px; margin-bottom: 10px; font-size: 11.5px; }
+    #printArea .rpt-client { border: none; padding: 0 0 10px; background: none; font-size: 12px; }
+    #printArea .rpt-note { font-size: 10.5px; }
   }
 
   /* ---------- mobile ---------- */
@@ -314,6 +344,12 @@
     .month-cell { min-height: unset; }
     .modal { width: 100%; max-width: 380px; }
     .cv-toolbar select, .cv-toolbar input { flex: 1 1 100%; }
+    .rpt-controls { grid-template-columns: 1fr 1fr; }
+    .rpt-field.rpt-wide { grid-column: 1 / -1; }
+    .rpt-actions button { flex: 1 1 auto; }
+    .rpt-actions label { flex: 1 1 100%; }
+    .rpt-actions label select { flex: 1; }
+    .rpt-scroll { max-height: 62vh; }
     .cv-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "when status" "title title" "who who"; padding: 10px 12px; }
     .cv-when { grid-area: when; font-size: 12.5px; }
     .cv-status { grid-area: status; justify-self: end; }
@@ -453,24 +489,40 @@
       <div class="topbar">
         <h2>Reports</h2>
       </div>
-      <div class="weeknav" style="margin-bottom:16px; flex-wrap:wrap;">
-        <label style="margin:0; display:flex; align-items:center; gap:6px;">From <input type="date" id="reportStart" style="width:auto;"></label>
-        <label style="margin:0; display:flex; align-items:center; gap:6px;">To <input type="date" id="reportEnd" style="width:auto;"></label>
-        <select id="reportWorkerFilter"></select>
-        <select id="reportClientFilter"></select>
-        <button class="primary" id="runReportBtn">Run report</button>
-        <button id="exportReportBtn">Export PDF</button>
+      <div class="rpt-controls">
+        <div class="rpt-field rpt-wide"><label for="rptReport">Report</label><select id="rptReport"></select></div>
+        <div class="rpt-field"><label for="rptQuick">Period</label>
+          <select id="rptQuick">
+            <option value="week">This week</option>
+            <option value="lastweek">Last week</option>
+            <option value="month">This month</option>
+            <option value="lastmonth">Last month</option>
+            <option value="last30">Last 30 days</option>
+            <option value="last12">Last 12 months</option>
+            <option value="custom">Choose dates</option>
+          </select>
+        </div>
+        <div class="rpt-field"><label for="rptStart">From</label><input type="date" id="rptStart"></div>
+        <div class="rpt-field"><label for="rptEnd">To</label><input type="date" id="rptEnd"></div>
+        <div class="rpt-field" id="rptPersonField"><label for="rptPerson">Person</label><select id="rptPerson"></select></div>
+        <div class="rpt-field"><label for="rptClient">Client</label><select id="rptClient"></select></div>
+        <div class="rpt-field"><label for="rptType">Job type</label><select id="rptType"></select></div>
       </div>
-      <div id="reportOutput"></div>
-
-      <div style="margin-top:32px; border-top:1px solid var(--border); padding-top:20px;">
-        <h3 style="font-size:15px; margin:0 0 12px;">Utilisation</h3>
-        <div id="utilizationHighlight"></div>
-        <table class="admin-table">
-          <thead><tr><th>Person</th><th>This week (est.)</th><th>This week (actual)</th><th>Week util.</th><th>This month (est.)</th><th>This month (actual)</th><th>Month util.</th></tr></thead>
-          <tbody id="utilizationBody"></tbody>
-        </table>
+      <div class="rpt-actions">
+        <button class="primary" id="rptRun">Run report</button>
+        <button id="rptPrint" disabled>Print / PDF</button>
+        <button id="rptCsv" disabled>Download CSV</button>
+        <label id="rptCsvModeWrap">CSV rows
+          <select id="rptCsvMode">
+            <option value="job">One row per job</option>
+            <option value="day">One row per day</option>
+          </select>
+        </label>
       </div>
+      <p class="rpt-hint" id="rptHint"></p>
+      <div id="rptWarn"></div>
+      <div id="rptOut"></div>
+      <style id="rptPageStyle"></style>
     </div>
 
     <div id="view-settings" style="display:none">
@@ -943,14 +995,9 @@ async function boot() {
     document.getElementById('navTeam').style.display = 'block';
     document.getElementById('navSettings').style.display = 'block';
     document.getElementById('workerFilter').style.display = 'block';
-  } else {
-    document.getElementById('reportWorkerFilter').style.display = 'none';
-    document.getElementById('reportClientFilter').style.display = 'none';
   }
   document.getElementById('navReports').style.display = 'block';
-  const today = new Date();
-  document.getElementById('reportStart').value = fmtDate(startOfWeek(today));
-  document.getElementById('reportEnd').value = fmtDate(addDays(startOfWeek(today), 6));
+  rptInitDefaults();
   users = await api('/users');
   clients = await api('/clients');
   sites = await api('/sites');
@@ -959,8 +1006,8 @@ async function boot() {
   renderClientsTable();
   renderUsersTable();
   await renderCurrentView();
-  if (canSeeAll()) {
-    companySettings = await api('/settings');
+  companySettings = await api('/settings');
+  {
     if (me.role === 'admin' && !companySettings.setup_complete) { showView('settings'); document.getElementById('welcomeBanner').style.display = 'block'; document.getElementById('skipSetupBtn').style.display = 'inline-block'; }
   }
 }
@@ -1154,10 +1201,7 @@ function populateSelects() {
   const filterSel = document.getElementById('workerFilter');
   filterSel.innerHTML = '<option value="">Everyone</option>' + users.filter(u=>u.active).map(u => `<option value="${u.id}">${escapeHtml(u.name)}</option>`).join('');
 
-  const reportFilterSel = document.getElementById('reportWorkerFilter');
-  reportFilterSel.innerHTML = '<option value="">Everyone</option>' + users.filter(u=>u.active).map(u => `<option value="${u.id}">${escapeHtml(u.name)}</option>`).join('');
-  const reportClientSel = document.getElementById('reportClientFilter');
-  reportClientSel.innerHTML = '<option value="">All clients</option>' + clients.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  rptPopulate();
 }
 
 function updateSiteOptions() {
@@ -1173,6 +1217,7 @@ function updateSiteOptions() {
 async function refreshJobTypes() {
   const types = await api('/job-types');
   document.getElementById('jobTypeOptions').innerHTML = types.map(t => `<option value="${escapeHtml(t)}"></option>`).join('');
+  rptFillTypes(types);
 }
 
 function escapeHtml(s) { return (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
@@ -1184,7 +1229,7 @@ function showView(view) {
   ['calendar','clients','team','reports','settings'].forEach(v => {
     document.getElementById('view-' + v).style.display = (v === view) ? 'block' : 'none';
   });
-  if (view === 'reports') runReport();
+  if (view === 'reports') rptRun(true);
   if (view === 'settings') fillSettingsForm();
   else applyTheme(publicSettings.main_color, publicSettings.accent_color); // drops any unsaved colour preview
 }
@@ -1606,8 +1651,6 @@ function exportPdf() {
 
 // ---------- reports ----------
 
-const REPORT_COLGROUP = `<colgroup><col class="col-date"><col class="col-job"><col class="col-type"><col class="col-client"><col class="col-location"><col class="col-time"><col class="col-estimate"><col class="col-duration"></colgroup>`;
-
 function minutesBetween(start, end) {
   if (!start || !end) return 0;
   const [sh, sm] = start.split(':').map(Number);
@@ -1623,88 +1666,459 @@ function hoursShort(mins) {
   return (h % 1 === 0) ? String(h) : h.toFixed(1);
 }
 
-let lastReportGroups = [];
-let lastReportClientName = '';
+// One Reports page with a picker. The jobs, people and logged times come from /api/report-data (the server decides what
+// each role may see), and every report is worked out from that one list, so the numbers agree from report to report.
+// Real hours are null, never zero, for a job with no logged time, and are shown as a dash.
 
-// One report row per item per day, grouped by the person who did (or is meant to do) the work.
-function buildReportGroups(items, start, end, clientFilter) {
-  const groups = {};
-  const ensure = (id, name) => (groups[id] ||= { name, rows: [], totalMinutes: 0, totalEstimate: 0 });
-  items.forEach(a => {
-    if (clientFilter && String(a.client_id) !== clientFilter) return;
-    const days = new Set(a.dates.filter(d => d >= start && d <= end));
-    (a.entries || []).forEach(e => { if (e.work_date >= start && e.work_date <= end) days.add(e.work_date); });
-    [...days].sort().forEach(d => {
-      const est = dayEstimate(a, d);
-      const es = entriesOn(a, d);
-      if (es.length) {
-        es.forEach(e => {
-          const g = ensure(e.user_id, e.user_name);
-          g.rows.push({ a, date: d, entry: e, est });
-          g.totalMinutes += e.minutes; g.totalEstimate += est;
-        });
-      } else {
-        const g = ensure(a.assigned_to || 'none', a.assigned_name || 'Unassigned');
-        g.rows.push({ a, date: d, entry: null, est });
-        g.totalEstimate += est;
-      }
-    });
-  });
-  return Object.values(groups).sort((x, y) => x.name.localeCompare(y.name));
-}
+const RPT = { items: [], params: null, key: '', ticket: 0, built: null, ranAt: null, csvMode: {}, types: [] };
+const rptEl = id => document.getElementById(id);
+const DASH = '–';
+const rptHM = m => (m === null || m === undefined) ? DASH : formatMinutes(m);
+// Decimal hours for the CSV: four places with the trailing zeros dropped (3, 2.5, 3.1667), so a column adds up to its Total row.
+const rptDec = m => (m === null || m === undefined) ? '' : String(Number((m / 60).toFixed(4)));
+const rptDiff = (real, est) => (real === null || est === null) ? null : real - est;
+const rptDiffText = d => d === null ? DASH : d === 0 ? '0m' : (d > 0 ? '+' : '−') + formatMinutes(Math.abs(d));
+const rptDate = iso => parseLocalDate(iso).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+const rptSpan = (a, b) => a === b ? rptDate(a) : `${rptDate(a)} – ${rptDate(b)}`;
+const C = (t, v) => ({ t: String(t === null || t === undefined ? '' : t), v: v === undefined ? String(t === null || t === undefined ? '' : t) : String(v) });
+const rptPeopleText = a => (a.people || []).map(p => p.name).join(', ') || 'Unassigned';
+const rptFirstPerson = a => (a.people || [])[0] || null;
+const rptStatus = a => a.status === 'completed' ? 'Completed' : a.status === 'cancelled' ? 'Cancelled' : 'Scheduled';
+const rptJobText = (a, d) => { const tag = d ? dayTagText(a, d) : ''; return a.title + (tag ? ` (${tag})` : ''); };
 
-function reportRowHtml(r, forPrint) {
-  const { a, date, entry, est } = r;
-  const tag = dayTagText(a, date);
-  const timeText = entry && entry.start_time ? loggedTimeText(entry)
-    : (forPrint ? '' : (a.status === 'completed' ? 'Completed, no time logged' : 'Not logged'));
-  return `<tr>
-    <td>${escapeHtml(date)}</td>
-    <td>${escapeHtml(a.title)}${tag ? ' (' + tag + ')' : ''}</td>
-    <td>${escapeHtml(a.job_type||'')}</td>
-    <td>${escapeHtml(a.client_name||'')}</td>
-    <td>${escapeHtml(locationText(a))}</td>
-    <td>${escapeHtml(timeText)}</td>
-    <td>${est ? formatMinutes(est) : ''}</td>
-    <td>${entry && entry.minutes ? formatMinutes(entry.minutes) : ''}</td>
-  </tr>`;
-}
-
-function reportHeading(group) {
-  const pct = group.totalEstimate ? Math.round(group.totalMinutes / group.totalEstimate * 100) : null;
-  return `${escapeHtml(group.name)} \u2014 ${formatMinutes(group.totalMinutes)} logged${group.totalEstimate ? ` \u00b7 ${formatMinutes(group.totalEstimate)} estimated${pct !== null ? ' (' + pct + '%)' : ''}` : ''}`;
-}
-
-async function runReport() {
-  const start = document.getElementById('reportStart').value;
-  const end = document.getElementById('reportEnd').value;
-  const filter = document.getElementById('reportWorkerFilter').value;
-  const clientFilter = document.getElementById('reportClientFilter').value;
-  if (!start || !end) { alert('Pick a start and end date'); return; }
-
-  let url = `/appointments?start=${start}&end=${end}`;
-  if (filter) url += `&assigned_to=${filter}`;
-  let items = await api(url);
-  if (!canSeeAll()) items = items.filter(isMine); // workers report on their own work only
-
-  lastReportGroups = buildReportGroups(items, start, end, clientFilter);
-  lastReportClientName = clientFilter ? (clients.find(c => String(c.id) === clientFilter)||{}).name : '';
-
-  const output = document.getElementById('reportOutput');
-  if (!lastReportGroups.length) {
-    output.innerHTML = `<p style="color:var(--muted);">Nothing in that date range${lastReportClientName ? ' for ' + escapeHtml(lastReportClientName) : ''}.</p>`;
-    renderUtilization();
-    return;
+// Where the work is, and who to ring there.
+function rptSite(a) {
+  if (a.activity_type === 'task') return { name: 'Task', address: '', contact: '', phone: '' };
+  if (a.location_type === 'project_site') {
+    return { name: a.site_name || 'Job site (one-off address)', address: a.site_id ? (a.site_full_address || '') : (a.site_address || ''), contact: a.site_contact_name || '', phone: a.site_phone || '' };
   }
-  output.innerHTML = (lastReportClientName ? `<p style="color:var(--ink-soft); margin-bottom:10px;">Showing work for <strong>${escapeHtml(lastReportClientName)}</strong></p>` : '') + lastReportGroups.map(group => `
-    <h3 style="margin:20px 0 8px;">${reportHeading(group)}</h3>
-    <table class="admin-table report-table">
-      ${REPORT_COLGROUP}
-      <thead><tr><th>Date</th><th>Job</th><th>Type of work</th><th>Client</th><th>Location</th><th>Time</th><th>Estimated</th><th>Duration</th></tr></thead>
-      <tbody>${group.rows.map(r => reportRowHtml(r, false)).join('')}</tbody>
-    </table>`).join('');
-  renderUtilization();
+  return { name: 'Head office', address: a.client_address || '', contact: a.client_contact_name || '', phone: a.client_phone || '' };
 }
+
+// One model per job, worked out for the chosen dates: the days inside the range, the estimate for those days
+// (the same split the calendar uses), and the logged hours inside the range (null when nothing was logged).
+function rptJobs() {
+  const { start, end } = RPT.params;
+  return RPT.items.map(a => {
+    const days = a.dates.filter(d => d >= start && d <= end);
+    const all = (a.entries || []).filter(e => e.minutes > 0);
+    const entries = all.filter(e => e.work_date >= start && e.work_date <= end);
+    const estMin = a.estimate_minutes ? days.reduce((t, d) => t + dayEstimate(a, d), 0) : 0;
+    return {
+      a, days, entries, estMin, est: a.estimate_minutes ? estMin : null,
+      real: entries.length ? entries.reduce((t, e) => t + e.minutes, 0) : null,
+      anyTime: all.length > 0,
+      first: days[0] || (entries[0] && entries[0].work_date) || a.dates[0],
+      last: days.length ? days[days.length - 1] : ((entries.length && entries[entries.length - 1].work_date) || a.dates[a.dates.length - 1]),
+    };
+  }).filter(j => j.days.length || j.entries.length)
+    .sort((x, y) => x.first.localeCompare(y.first) || x.a.title.localeCompare(y.a.title) || x.a.id - y.a.id);
+}
+
+// The days of a job inside the range, each with the estimate for that day and the time logged on it.
+function rptDayRows(j) {
+  const a = j.a, rows = [];
+  for (const d of [...new Set([...j.days, ...j.entries.map(e => e.work_date)])].sort()) {
+    const est = a.estimate_minutes && a.dates.includes(d) ? dayEstimate(a, d) : null;
+    const es = j.entries.filter(e => e.work_date === d);
+    if (es.length) es.forEach((e, i) => rows.push({ d, est: i === 0 ? est : null, e }));
+    else rows.push({ d, est, e: null });
+  }
+  return rows;
+}
+const rptSum = (list, f) => list.reduce((t, x) => t + (f(x) || 0), 0);
+const rptHas = (list, f) => list.some(x => f(x) !== null && f(x) !== undefined);
+
+// ---- the reports ----
+// Each builder returns { title, intro, outro, sections, csv }. A section is { heading, head, nums, rows, foot, wide, empty };
+// a cell is text, or C(shown, forCsv). `csv` is a list of blocks { title, head, rows } with ISO dates and decimal hours.
+
+function rptBuildHours(jobs, mode) {
+  const today = fmtDate(new Date());
+  const groups = new Map();
+  const grp = (id, name) => { if (!groups.has(id)) groups.set(id, { name, rows: [], real: 0, est: 0, logged: false }); return groups.get(id); };
+  for (const j of jobs) {
+    for (const r of rptDayRows(j)) {
+      const a = j.a;
+      if (r.e) { const g = grp(r.e.user_id, r.e.user_name); g.rows.push({ a, j, ...r }); g.real += r.e.minutes; g.est += r.est || 0; g.logged = true; }
+      else { const p = rptFirstPerson(a); const g = grp(p ? p.id : 'none', p ? p.name : 'Unassigned'); g.rows.push({ a, j, ...r }); g.est += r.est || 0; }
+    }
+  }
+  const list = [...groups.values()].sort((x, y) => x.name.localeCompare(y.name));
+  const head = ['Date', 'Job', 'Type of work', 'Client', 'Location', 'Time', 'Estimated', 'Real'];
+  const sections = list.map(g => ({
+    heading: `${g.name} — ${g.logged ? formatMinutes(g.real) : DASH} logged${g.est ? ` · ${formatMinutes(g.est)} estimated${g.logged ? ' (' + Math.round(g.real / g.est * 100) + '%)' : ''}` : ''}`,
+    head, nums: [6, 7],
+    rows: g.rows.map(({ a, d, e, est }) => [
+      C(rptDate(d), d), rptJobText(a, d), a.job_type || '', a.client_name || '', locationText(a),
+      e && e.start_time ? loggedTimeText(e) : e ? '' : d > today ? 'Scheduled' : a.status === 'completed' ? 'Completed, no time logged' : 'Not logged',
+      C(est ? formatMinutes(est) : DASH, est ? rptDec(est) : ''), C(e ? formatMinutes(e.minutes) : DASH, e ? rptDec(e.minutes) : ''),
+    ]),
+    foot: ['Total', '', '', '', '', '', C(g.est ? formatMinutes(g.est) : DASH, rptDec(g.est || null)), C(g.logged ? formatMinutes(g.real) : DASH, rptDec(g.logged ? g.real : null))],
+  }));
+  const totEst = rptSum(list, g => g.est), anyReal = list.some(g => g.logged), totReal = rptSum(list, g => g.real);
+  let csv;
+  if (mode === 'day') {
+    csv = [{ head: ['Date', 'Person', 'Job', 'Job type', 'Client', 'Location', 'Start', 'End', 'Estimated (h)', 'Real (h)'],
+      rows: [...list.flatMap(g => g.rows.map(({ a, d, e, est }) => [d, g.name, a.title, a.job_type || '', a.client_name || '', locationText(a), e ? e.start_time || '' : '', e ? e.end_time || '' : '', rptDec(est), e ? rptDec(e.minutes) : '']))
+        , ['Total', '', '', '', '', '', '', '', rptDec(totEst || null), rptDec(anyReal ? totReal : null)]] }];
+  } else {
+    const rows = [];
+    for (const g of list) {
+      const byJob = new Map();
+      for (const r of g.rows) {
+        const o = byJob.get(r.a.id) || { a: r.a, first: r.d, last: r.d, est: null, real: null };
+        o.first = r.d < o.first ? r.d : o.first; o.last = r.d > o.last ? r.d : o.last;
+        if (r.est !== null) o.est = (o.est || 0) + r.est;
+        if (r.e) o.real = (o.real || 0) + r.e.minutes;
+        byJob.set(r.a.id, o);
+      }
+      for (const o of [...byJob.values()].sort((x, y) => x.first.localeCompare(y.first) || x.a.id - y.a.id))
+        rows.push([o.first, o.last, g.name, o.a.title, o.a.job_type || '', o.a.client_name || '', locationText(o.a), rptDec(o.est), rptDec(o.real)]);
+    }
+    csv = [{ head: ['Start date', 'End date', 'Person', 'Job', 'Job type', 'Client', 'Location', 'Estimated (h)', 'Real (h)'],
+      rows: [...rows, ['Total', '', '', '', '', '', '', rptDec(totEst || null), rptDec(anyReal ? totReal : null)]] }];
+  }
+  return { title: 'Hours by person and client', sections, csv, empty: 'No jobs or logged hours in that period.' };
+}
+
+function rptBuildUtil(jobs) {
+  const people = new Map();
+  const get = (id, name) => { if (!people.has(id)) people.set(id, { name, jobs: new Set(), est: 0, real: 0, logged: false }); return people.get(id); };
+  for (const j of jobs) {
+    const p = rptFirstPerson(j.a);
+    if (p) { const x = get(p.id, p.name); x.jobs.add(j.a.id); x.est += j.estMin; }
+    for (const e of j.entries) { const x = get(e.user_id, e.user_name); x.jobs.add(j.a.id); x.real += e.minutes; x.logged = true; }
+  }
+  const list = [...people.values()].sort((a, b) => a.name.localeCompare(b.name));
+  const pct = (real, est, logged) => est && logged ? Math.round(real / est * 100) : null;
+  const tEst = rptSum(list, x => x.est), tReal = rptSum(list, x => x.real), tLogged = list.some(x => x.logged);
+  const jobsAll = new Set(); list.forEach(x => x.jobs.forEach(id => jobsAll.add(id)));
+  const row = x => [x.name, C(x.jobs.size), C(x.est ? formatMinutes(x.est) : DASH, rptDec(x.est || null)), C(x.logged ? formatMinutes(x.real) : DASH, rptDec(x.logged ? x.real : null)),
+    C(pct(x.real, x.est, x.logged) === null ? DASH : pct(x.real, x.est, x.logged) + '%', pct(x.real, x.est, x.logged) === null ? '' : pct(x.real, x.est, x.logged))];
+  return {
+    title: 'Utilisation',
+    sections: [{
+      head: ['Person', 'Jobs', 'Estimated', 'Real (logged)', 'Utilisation'], nums: [1, 2, 3, 4], rows: list.map(row),
+      foot: ['Total', C(jobsAll.size), C(tEst ? formatMinutes(tEst) : DASH, rptDec(tEst || null)), C(tLogged ? formatMinutes(tReal) : DASH, rptDec(tLogged ? tReal : null)),
+        C(pct(tReal, tEst, tLogged) === null ? DASH : pct(tReal, tEst, tLogged) + '%', pct(tReal, tEst, tLogged) === null ? '' : pct(tReal, tEst, tLogged))],
+      empty: 'No estimated or logged time in that period.',
+    }],
+    outro: 'Utilisation is the real hours logged as a share of the hours estimated. Estimates count under the person the job is assigned to.',
+    csv: [{ head: ['Person', 'Jobs', 'Estimated (h)', 'Real (h)', 'Utilisation (%)'], rows: [...list.map(x => [x.name, x.jobs.size, rptDec(x.est || null), rptDec(x.logged ? x.real : null), pct(x.real, x.est, x.logged) === null ? '' : pct(x.real, x.est, x.logged)]),
+      ['Total', jobsAll.size, rptDec(tEst || null), rptDec(tLogged ? tReal : null), pct(tReal, tEst, tLogged) === null ? '' : pct(tReal, tEst, tLogged)]] }],
+    empty: 'No estimated or logged time in that period.',
+  };
+}
+
+function rptBuildPerson(jobs) {
+  const rows = [];
+  for (const j of jobs) for (const d of j.days) rows.push({ a: j.a, d, s: rptSite(j.a) });
+  rows.sort((x, y) => x.d.localeCompare(y.d) || x.a.title.localeCompare(y.a.title) || x.a.id - y.a.id);
+  const who = RPT.params.person ? ((users.find(u => String(u.id) === String(RPT.params.person)) || {}).name || '') : (me ? me.name : '');
+  const head = ['Date', 'Job', 'Client', 'Job site', 'Address', 'Site contact', 'Phone', 'Job type'];
+  return {
+    title: 'Person schedule' + (who ? ' — ' + who : ''),
+    sections: [{ head, wide: true, rows: rows.map(({ a, d, s }) => [C(rptDate(d), d), rptJobText(a, d), a.client_name || '', s.name, s.address, s.contact, s.phone, a.job_type || '']), empty: 'Nothing scheduled in that period.' }],
+    csv: [{ head: ['Date', 'Job', 'Client', 'Job site', 'Address', 'Site contact', 'Phone', 'Job type'], rows: rows.map(({ a, d, s }) => [d, rptJobText(a, d), a.client_name || '', s.name, s.address, s.contact, s.phone, a.job_type || '']) }],
+    empty: 'Nothing scheduled in that period.',
+  };
+}
+
+function rptBuildTeam(jobs) {
+  const byDay = new Map();
+  for (const j of jobs) for (const d of j.days) { if (!byDay.has(d)) byDay.set(d, []); byDay.get(d).push(j.a); }
+  const head = ['Person', 'Job', 'Client', 'Job site', 'Address', 'Job type', 'Status'];
+  const line = (a, d) => { const s = rptSite(a); return [rptPeopleText(a), rptJobText(a, d), a.client_name || '', s.name, s.address, a.job_type || '', rptStatus(a)]; };
+  const days = [...byDay.keys()].sort();
+  const sortDay = list => list.slice().sort((x, y) => rptPeopleText(x).localeCompare(rptPeopleText(y)) || x.title.localeCompare(y.title) || x.id - y.id);
+  return {
+    title: 'Team schedule',
+    sections: days.map(d => ({ heading: `${rptDate(d)} · ${byDay.get(d).length} job${byDay.get(d).length === 1 ? '' : 's'}`, head, wide: true, rows: sortDay(byDay.get(d)).map(a => line(a, d)) })),
+    csv: [{ head: ['Date', ...head], rows: days.flatMap(d => sortDay(byDay.get(d)).map(a => [d, ...line(a, d)])) }],
+    empty: 'Nothing scheduled in that period.',
+  };
+}
+
+function rptBuildEst(jobs, mode) {
+  const head = ['Date', 'Job', 'Person', 'Client', 'Job type', 'Estimated', 'Real', 'Difference'];
+  const rows = jobs.map(j => ({ j, a: j.a, d: rptDiff(j.real, j.est) }));
+  const tEst = rptSum(jobs, j => j.est), anyEst = rptHas(jobs, j => j.est), tReal = rptSum(jobs, j => j.real), anyReal = rptHas(jobs, j => j.real);
+  const both = jobs.filter(j => j.real !== null && j.est !== null);
+  const tDiff = both.length ? rptSum(both, j => j.real) - rptSum(both, j => j.est) : null;
+  const sections = [{
+    head, nums: [5, 6, 7],
+    rows: rows.map(({ j, a, d }) => [C(rptSpan(j.first, j.last), j.first), a.title, rptPeopleText(a), a.client_name || '', a.job_type || '', C(rptHM(j.est), rptDec(j.est)), C(rptHM(j.real), rptDec(j.real)), C(rptDiffText(d), rptDec(d))]),
+    foot: ['Total', C(jobs.length + ' jobs'), '', '', '', C(anyEst ? formatMinutes(tEst) : DASH), C(anyReal ? formatMinutes(tReal) : DASH), C(rptDiffText(tDiff))],
+    empty: 'No jobs in that period.',
+  }];
+  // totals by person, client and job type: every job is counted once, under the person assigned to it
+  const groupBy = (label, keyOf) => {
+    const m = new Map();
+    for (const j of jobs) {
+      const k = keyOf(j.a); const g = m.get(k) || { name: k, n: 0, est: 0, anyEst: false, real: 0, anyReal: false, dEst: 0, dReal: 0, dN: 0, missing: 0 };
+      g.n++; if (j.est !== null) { g.est += j.est; g.anyEst = true; }
+      if (j.real !== null) { g.real += j.real; g.anyReal = true; } else g.missing++;
+      if (j.est !== null && j.real !== null) { g.dEst += j.est; g.dReal += j.real; g.dN++; }
+      m.set(k, g);
+    }
+    const list = [...m.values()].sort((x, y) => x.name.localeCompare(y.name));
+    const diff = g => g.dN ? g.dReal - g.dEst : null;
+    const line = g => [g.name, C(g.n), C(g.anyEst ? formatMinutes(g.est) : DASH, rptDec(g.anyEst ? g.est : null)), C(g.anyReal ? formatMinutes(g.real) : DASH, rptDec(g.anyReal ? g.real : null)), C(rptDiffText(diff(g)), rptDec(diff(g))), C(g.missing)];
+    return { label, list, line, sec: { heading: `Totals by ${label}`, head: [label[0].toUpperCase() + label.slice(1), 'Jobs', 'Estimated', 'Real', 'Difference', 'No time logged'], nums: [1, 2, 3, 4, 5],
+      rows: list.map(line), foot: ['Total', C(jobs.length), C(anyEst ? formatMinutes(tEst) : DASH, rptDec(anyEst ? tEst : null)), C(anyReal ? formatMinutes(tReal) : DASH, rptDec(anyReal ? tReal : null)), C(rptDiffText(tDiff), rptDec(tDiff)), C(jobs.filter(j => j.real === null).length)] } };
+  };
+  const gs = [groupBy('person', a => (rptFirstPerson(a) || { name: 'Unassigned' }).name), groupBy('client', a => a.client_name || 'No client'), groupBy('job type', a => a.job_type || 'No job type')];
+  gs.forEach(g => sections.push(g.sec));
+  let csv;
+  if (mode === 'day') {
+    const lines = [];
+    for (const j of jobs) for (const r of rptDayRows(j)) lines.push([r.d, j.a.title, r.e ? r.e.user_name : rptPeopleText(j.a), j.a.client_name || '', j.a.job_type || '', r.e ? r.e.start_time || '' : '', r.e ? r.e.end_time || '' : '', rptDec(r.est), r.e ? rptDec(r.e.minutes) : '']);
+    csv = [{ head: ['Date', 'Job', 'Person', 'Client', 'Job type', 'Start', 'End', 'Estimated (h)', 'Real (h)'],
+      rows: [...lines, ['Total', '', '', '', '', '', '', rptDec(anyEst ? tEst : null), rptDec(anyReal ? tReal : null)]] }];
+  } else {
+    csv = [{ head: ['Start date', 'End date', 'Job', 'Person', 'Client', 'Job type', 'Estimated (h)', 'Real (h)', 'Difference (h)'],
+      rows: [...rows.map(({ j, a, d }) => [j.first, j.last, a.title, rptPeopleText(a), a.client_name || '', a.job_type || '', rptDec(j.est), rptDec(j.real), rptDec(d)]),
+        ['Total', '', '', '', '', '', rptDec(anyEst ? tEst : null), rptDec(anyReal ? tReal : null), rptDec(tDiff)]] },
+    ...gs.map(g => ({ title: `Totals by ${g.label}`, head: [g.label[0].toUpperCase() + g.label.slice(1), 'Jobs', 'Estimated (h)', 'Real (h)', 'Difference (h)', 'No time logged'],
+      rows: g.list.map(x => [x.name, x.n, rptDec(x.anyEst ? x.est : null), rptDec(x.anyReal ? x.real : null), rptDec(diff0(x)), x.missing]) }))];
+  }
+  function diff0(g) { return g.dN ? g.dReal - g.dEst : null; }
+  return { title: 'Estimate vs real', sections, csv, empty: 'No jobs in that period.',
+    outro: 'Difference is real minus estimated, and only counts jobs that have both an estimate and logged time. Totals by person count each job under the person it is assigned to. A dash means nothing was logged.' };
+}
+
+function rptBuildClient(jobs, mode) {
+  const c = clients.find(x => String(x.id) === String(RPT.params.client)) || {};
+  const done = jobs.filter(j => j.a.status !== 'cancelled' && (j.a.status === 'completed' || j.real !== null));
+  const tReal = rptSum(done, j => j.real), anyReal = rptHas(done, j => j.real);
+  const missing = done.filter(j => j.real === null).length;
+  const intro = `<div class="rpt-client"><strong>${escapeHtml(c.name || '')}</strong>${c.address ? '<br>' + escapeHtml(c.address) : ''}${c.contact_name || c.phone ? '<br>' + escapeHtml([c.contact_name, c.phone].filter(Boolean).join(' · ')) : ''}</div>`;
+  const head = ['Date', 'Job', 'Job type', 'Job site', 'Person', 'Hours'];
+  const sections = [{
+    head, nums: [5],
+    rows: done.map(j => { const s = rptSite(j.a); return [C(rptSpan(j.first, j.last), j.first), j.a.title, j.a.job_type || '', s.name + (s.address ? ' — ' + s.address : ''), rptPeopleText(j.a), C(rptHM(j.real), rptDec(j.real))]; }),
+    foot: ['Total', C(done.length + ' jobs'), '', '', '', C(anyReal ? formatMinutes(tReal) : DASH)],
+    empty: 'Nothing was done for this client in that period.',
+  }];
+  let csv;
+  if (mode === 'day') {
+    const lines = [];
+    for (const j of done) for (const r of rptDayRows(j)) lines.push([r.d, j.a.title, j.a.job_type || '', rptSite(j.a).name, r.e ? r.e.user_name : rptPeopleText(j.a), r.e ? r.e.start_time || '' : '', r.e ? r.e.end_time || '' : '', r.e ? rptDec(r.e.minutes) : '']);
+    csv = [{ head: ['Date', 'Job', 'Job type', 'Job site', 'Person', 'Start', 'End', 'Hours'], rows: [...lines, ['Total', '', '', '', '', '', '', rptDec(anyReal ? tReal : null)]] }];
+  } else {
+    csv = [{ head: ['Start date', 'End date', 'Job', 'Job type', 'Job site', 'Address', 'Person', 'Hours'],
+      rows: [...done.map(j => { const s = rptSite(j.a); return [j.first, j.last, j.a.title, j.a.job_type || '', s.name, s.address, rptPeopleText(j.a), rptDec(j.real)]; }), ['Total', '', '', '', '', '', '', rptDec(anyReal ? tReal : null)]] }];
+  }
+  return { title: 'Client statement' + (c.name ? ' — ' + c.name : ''), intro, sections, csv, empty: 'Nothing was done for this client in that period.',
+    outro: `<strong>Total hours: ${anyReal ? formatMinutes(tReal) : DASH}</strong> across ${done.length} job${done.length === 1 ? '' : 's'}${missing ? ` (${missing} with no time logged, shown as ${DASH})` : ''}.` };
+}
+
+function rptBuildAttention(jobs) {
+  const today = fmtDate(new Date());
+  const seesAll = canSeeAll();
+  const noTime = jobs.filter(j => j.a.status === 'completed' && !j.anyTime);
+  const neverDone = jobs.filter(j => j.a.status !== 'completed' && j.a.status !== 'cancelled' && j.a.dates[j.a.dates.length - 1] < today);
+  const unassigned = jobs.filter(j => !(j.a.people || []).length && j.a.status !== 'cancelled' && j.a.dates[j.a.dates.length - 1] >= today);
+  const head = ['Date', 'Job', 'Client', 'Person', 'Job type'];
+  const rowOf = j => [C(rptSpan(j.first, j.last), j.first), j.a.title, j.a.client_name || '', rptPeopleText(j.a), j.a.job_type || ''];
+  const sections = [
+    { heading: `Completed jobs with no time logged (${noTime.length})`, head, rows: noTime.map(rowOf), empty: 'None. Every completed job has its times logged.' },
+    { heading: `Past jobs never marked complete (${neverDone.length})`, head, rows: neverDone.map(rowOf), empty: 'None. Every past job has been marked complete.' },
+  ];
+  if (seesAll) sections.push({ heading: `Upcoming jobs with nobody assigned (${unassigned.length})`, head, rows: unassigned.map(rowOf), empty: 'None. Every upcoming job has someone on it.' });
+  const csvRows = [['Completed, no time logged', noTime], ['Past, never marked complete', neverDone], ...(seesAll ? [['Upcoming, nobody assigned', unassigned]] : [])]
+    .flatMap(([issue, list]) => list.map(j => [issue, j.first, j.last, j.a.title, j.a.client_name || '', rptPeopleText(j.a), j.a.job_type || '', rptStatus(j.a)]));
+  return { title: 'Needs attention', sections, csv: [{ head: ['Issue', 'Start date', 'End date', 'Job', 'Client', 'Person', 'Job type', 'Status'], rows: csvRows }], empty: 'Nothing needs attention in that period.' };
+}
+
+function rptBuildJobs(jobs, mode) {
+  const rows = jobs.map(j => {
+    const a = j.a, s = rptSite(a);
+    return { j, a, s, line: [a.id, j.first, j.last, a.title, a.activity_type === 'task' ? 'Task' : 'Appointment', a.job_type || '', a.client_name || '', s.name, s.address, s.contact, s.phone, rptStatus(a), rptPeopleText(a), a.days,
+      rptDec(a.estimate_minutes || null), rptDec(j.est), rptDec(j.real), a.completed_at ? a.completed_at.slice(0, 10) : '', a.notes || ''], mins: [a.estimate_minutes || null, j.est, j.real] };
+  });
+  const head = ['ID', 'Start date', 'End date', 'Job', 'Type', 'Job type', 'Client', 'Job site', 'Address', 'Site contact', 'Phone', 'Status', 'Assigned to', 'Days', 'Estimate, whole job (h)', 'Estimated in period (h)', 'Real in period (h)', 'Completed on', 'Notes'];
+  const tEst = rptSum(jobs, j => j.est), anyEst = rptHas(jobs, j => j.est), tReal = rptSum(jobs, j => j.real), anyReal = rptHas(jobs, j => j.real);
+  const foot = ['Total', C(jobs.length + ' jobs'), '', '', '', '', '', '', '', '', '', '', '', '', '', C(anyEst ? formatMinutes(tEst) : DASH), C(anyReal ? formatMinutes(tReal) : DASH), '', ''];
+  const sections = [{ head, wide: true, nums: [13, 14, 15, 16], rows: rows.map(r => r.line.map((v, i) => i >= 14 && i <= 16 ? C(rptHM(r.mins[i - 14]), v) : v)), foot, empty: 'No jobs in that period.' }];
+  let csv;
+  if (mode === 'day') {
+    const lines = [];
+    for (const j of jobs) for (const r of rptDayRows(j)) { const s = rptSite(j.a); lines.push([j.a.id, r.d, j.a.title, j.a.activity_type === 'task' ? 'Task' : 'Appointment', j.a.job_type || '', j.a.client_name || '', s.name, s.address, s.contact, s.phone, rptStatus(j.a), r.e ? r.e.user_name : rptPeopleText(j.a), r.e ? r.e.start_time || '' : '', r.e ? r.e.end_time || '' : '', rptDec(r.est), r.e ? rptDec(r.e.minutes) : '']); }
+    csv = [{ head: ['ID', 'Date', 'Job', 'Type', 'Job type', 'Client', 'Job site', 'Address', 'Site contact', 'Phone', 'Status', 'Person', 'Start', 'End', 'Estimated (h)', 'Real (h)'],
+      rows: [...lines, ['Total', '', '', '', '', '', '', '', '', '', '', '', '', '', rptDec(anyEst ? tEst : null), rptDec(anyReal ? tReal : null)]] }];
+  } else {
+    csv = [{ head, rows: [...rows.map(r => r.line), ['Total', '', '', '', '', '', '', '', '', '', '', '', '', '', '', rptDec(anyEst ? tEst : null), rptDec(anyReal ? tReal : null), '', '']] }];
+  }
+  return { title: 'Job list', sections, csv, empty: 'No jobs in that period.' };
+}
+
+const REPORT_DEFS = [
+  { id: 'hours', name: 'Hours by person and client', hours: true, defaultMode: 'day', build: rptBuildHours },
+  { id: 'util', name: 'Utilisation', hours: true, build: rptBuildUtil },
+  { id: 'person', name: 'Person schedule', needsPerson: true, build: rptBuildPerson },
+  { id: 'team', name: 'Team schedule', build: rptBuildTeam },
+  { id: 'est', name: 'Estimate vs real', hours: true, modes: true, build: rptBuildEst },
+  { id: 'client', name: 'Client statement', hours: true, modes: true, needsClient: true, build: rptBuildClient },
+  { id: 'attention', name: 'Needs attention', build: rptBuildAttention },
+  { id: 'jobs', name: 'Job list', hours: true, modes: true, build: rptBuildJobs },
+];
+const rptDef = () => REPORT_DEFS.find(r => r.id === rptEl('rptReport').value) || REPORT_DEFS[0];
+const rptUsesModes = d => d.id === 'hours' || d.modes;
+
+// ---- drawing ----
+function rptTableHtml(s) {
+  const norm = c => (c && typeof c === 'object') ? c : { t: c === null || c === undefined ? '' : String(c) };
+  const nums = new Set(s.nums || []);
+  const cls = i => nums.has(i) ? ' class="num"' : '';
+  if (!s.rows.length) return `<p class="rpt-empty">${escapeHtml(s.empty || 'Nothing to show.')}</p>`;
+  return `<div class="rpt-scroll"><table class="rpt-table${s.wide ? ' wide' : ''}">
+    <thead><tr>${s.head.map((h, i) => `<th${cls(i)}>${escapeHtml(h)}</th>`).join('')}</tr></thead>
+    <tbody>${s.rows.map(r => `<tr>${r.map((c, i) => { const t = norm(c).t; return `<td${cls(i)}${s.wide ? ` title="${escapeHtml(t)}"` : ''}>${escapeHtml(t)}</td>`; }).join('')}</tr>`).join('')}</tbody>
+    ${s.foot ? `<tfoot><tr>${s.foot.map((c, i) => `<td${cls(i)}>${escapeHtml(norm(c).t)}</td>`).join('')}</tr></tfoot>` : ''}
+  </table></div>`;
+}
+function rptSectionsHtml(b) {
+  return (b.intro || '') + (b.sections.length ? b.sections.map(s => `<section class="rpt-section">${s.heading ? `<h3>${escapeHtml(s.heading)}</h3>` : ''}${rptTableHtml(s)}</section>`).join('') : `<p class="rpt-empty">${escapeHtml(b.empty || 'Nothing to show.')}</p>`) +
+    (b.outro ? `<p class="rpt-note">${/</.test(b.outro) ? b.outro : escapeHtml(b.outro)}</p>` : '');
+}
+function rptWarning(jobs, forPrint) {
+  const n = jobs.filter(j => j.a.status === 'completed' && !j.anyTime).length;
+  if (!n) return '';
+  const text = `${n} completed job${n === 1 ? '' : 's'} in this period ${n === 1 ? 'has' : 'have'} no time logged.`;
+  return `<div class="rpt-warn">${text}${forPrint ? '' : ' <a href="#" id="rptGoAttention">See the Needs attention list</a>'}</div>`;
+}
+
+function rptFilterText() {
+  const p = RPT.params, parts = [`Period: ${rptDate(p.start)} to ${rptDate(p.end)}`];
+  if (p.person && canSeeAll()) parts.push('Person: ' + ((users.find(u => String(u.id) === String(p.person)) || {}).name || ''));
+  if (p.client) parts.push('Client: ' + ((clients.find(c => String(c.id) === String(p.client)) || {}).name || ''));
+  if (p.type) parts.push('Job type: ' + p.type);
+  if (!canSeeAll()) parts.push('Your own jobs and hours');
+  return parts.join(' · ');
+}
+
+function rptSyncControls() {
+  const d = rptDef();
+  rptEl('rptCsvModeWrap').style.display = rptUsesModes(d) ? '' : 'none';
+  if (rptUsesModes(d)) rptEl('rptCsvMode').value = RPT.csvMode[d.id] || d.defaultMode || 'job';
+  rptEl('rptPersonField').style.display = canSeeAll() ? '' : 'none';
+  rptEl('rptHint').textContent = !canSeeAll() ? 'You see your own jobs and hours here.'
+    : d.needsPerson ? 'Choose a person to see their schedule.' : d.needsClient ? 'Choose a client to see what was done for them.' : '';
+}
+
+function rptRender() {
+  const out = rptEl('rptOut'), warn = rptEl('rptWarn');
+  RPT.built = null; rptEl('rptPrint').disabled = true; rptEl('rptCsv').disabled = true;
+  if (!RPT.params) return;
+  const d = rptDef(), p = RPT.params;
+  if (d.needsPerson && canSeeAll() && !p.person) { warn.innerHTML = ''; out.innerHTML = '<p class="rpt-empty">Choose a person above to see their schedule.</p>'; return; }
+  if (d.needsClient && !p.client) { warn.innerHTML = ''; out.innerHTML = '<p class="rpt-empty">Choose a client above to see what was done for them.</p>'; return; }
+  const jobs = rptJobs();
+  const mode = rptUsesModes(d) ? (RPT.csvMode[d.id] || d.defaultMode || 'job') : null;
+  const b = d.build(jobs, mode);
+  b.jobs = jobs; b.def = d;
+  RPT.built = b;
+  warn.innerHTML = d.hours ? rptWarning(jobs, false) : '';
+  out.innerHTML = rptSectionsHtml(b);
+  rptEl('rptPrint').disabled = false; rptEl('rptCsv').disabled = false;
+}
+
+function rptParams() {
+  const start = rptEl('rptStart').value, end = rptEl('rptEnd').value;
+  if (!start || !end) { rptEl('rptOut').innerHTML = '<p class="rpt-empty">Pick a start and end date.</p>'; RPT.params = null; return null; }
+  if (start > end) { rptEl('rptOut').innerHTML = '<p class="rpt-empty">The start date is after the end date.</p>'; RPT.params = null; return null; }
+  return { start, end, person: canSeeAll() ? rptEl('rptPerson').value : '', client: rptEl('rptClient').value, type: rptEl('rptType').value };
+}
+
+async function rptRun(force) {
+  rptSyncControls();
+  const p = rptParams();
+  if (!p) { rptRender(); return; }
+  const key = JSON.stringify(p);
+  if (!force && key === RPT.key && RPT.params) { rptRender(); return; }
+  const ticket = ++RPT.ticket;
+  rptEl('rptOut').innerHTML = '<p class="rpt-empty">Loading…</p>'; rptEl('rptWarn').innerHTML = '';
+  const qs = new URLSearchParams({ start: p.start, end: p.end });
+  if (p.person) qs.set('person_id', p.person);
+  if (p.client) qs.set('client_id', p.client);
+  if (p.type) qs.set('job_type', p.type);
+  let items;
+  try { items = await api('/report-data?' + qs); }
+  catch (err) { if (ticket === RPT.ticket) rptEl('rptOut').innerHTML = `<p class="rpt-empty">${escapeHtml(err.message)}</p>`; return; }
+  if (ticket !== RPT.ticket) return;   // a newer request has taken over
+  RPT.items = items; RPT.params = p; RPT.key = key; RPT.ranAt = new Date();
+  rptRender();
+}
+
+// ---- print and CSV ----
+function rptPrint() {
+  const b = RPT.built; if (!b) return;
+  const sub = `${escapeHtml(rptFilterText())}<br>Run on ${escapeHtml(RPT.ranAt.toLocaleString())}`;
+  rptEl('printArea').innerHTML = `${printHeaderHtml()}<h1>${escapeHtml(b.title)}</h1><div class="print-sub">${sub}</div>${b.def.hours ? rptWarning(b.jobs, true) : ''}${rptSectionsHtml(b)}`;
+  rptEl('rptPageStyle').textContent = b.sections.some(s => s.wide) ? '@page { size: landscape; margin: 12mm; }' : '@page { margin: 14mm; }';
+  window.print();
+}
+function rptCsvText(blocks) {
+  const q = v => { const s = v === null || v === undefined ? '' : String(v); return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const lines = r => r.map(q).join(',');
+  return '﻿' + blocks.filter(b => b.rows.length).map(b => [...(b.title ? [lines([b.title])] : []), lines(b.head), ...b.rows.map(lines)].join('\r\n')).join('\r\n\r\n') + '\r\n';
+}
+function rptCsv() {
+  const b = RPT.built; if (!b) return;
+  const blob = new Blob([rptCsvText(b.csv)], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `wrangla-${b.def.id}-${RPT.params.start}-to-${RPT.params.end}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+}
+
+// ---- controls ----
+function rptQuick(v) {
+  const t = new Date(); t.setHours(0, 0, 0, 0);
+  const mon = startOfWeek(t);
+  const ranges = {
+    week: [mon, addDays(mon, 6)], lastweek: [addDays(mon, -7), addDays(mon, -1)],
+    month: [new Date(t.getFullYear(), t.getMonth(), 1), new Date(t.getFullYear(), t.getMonth() + 1, 0)],
+    lastmonth: [new Date(t.getFullYear(), t.getMonth() - 1, 1), new Date(t.getFullYear(), t.getMonth(), 0)],
+    last30: [addDays(t, -29), t], last12: [addDays(t, -364), t],
+  };
+  if (!ranges[v]) return;
+  rptEl('rptStart').value = fmtDate(ranges[v][0]); rptEl('rptEnd').value = fmtDate(ranges[v][1]);
+}
+function rptPopulate() {
+  const keepPerson = rptEl('rptPerson').value, keepClient = rptEl('rptClient').value;
+  rptEl('rptPerson').innerHTML = '<option value="">Everyone</option>' + users.filter(u => u.active).map(u => `<option value="${u.id}">${escapeHtml(u.name)}</option>`).join('');
+  rptEl('rptClient').innerHTML = '<option value="">All clients</option>' + clients.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  rptEl('rptPerson').value = keepPerson; rptEl('rptClient').value = keepClient;
+  rptFillTypes();
+  rptEl('rptPersonField').style.display = canSeeAll() ? '' : 'none';
+}
+function rptFillTypes(types) {
+  if (types) RPT.types = types;
+  const sel = rptEl('rptType'), keep = sel.value;
+  sel.innerHTML = '<option value="">All job types</option>' + RPT.types.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+  sel.value = keep;
+}
+function rptInitDefaults() {
+  rptEl('rptReport').innerHTML = REPORT_DEFS.map(r => `<option value="${r.id}">${escapeHtml(r.name)}</option>`).join('');
+  rptEl('rptQuick').value = 'week'; rptQuick('week');
+}
+let rptTimer = null;
+const rptSoon = () => { clearTimeout(rptTimer); rptTimer = setTimeout(() => rptRun(false), 200); };
+rptEl('rptReport').addEventListener('change', () => rptRun(false));
+['rptStart', 'rptEnd'].forEach(id => rptEl(id).addEventListener('change', () => { rptEl('rptQuick').value = 'custom'; rptSoon(); }));
+['rptPerson', 'rptClient', 'rptType'].forEach(id => rptEl(id).addEventListener('change', rptSoon));
+rptEl('rptQuick').addEventListener('change', (e) => { rptQuick(e.target.value); rptSoon(); });
+rptEl('rptCsvMode').addEventListener('change', (e) => { RPT.csvMode[rptDef().id] = e.target.value; rptRender(); });
+rptEl('rptRun').addEventListener('click', () => rptRun(true));
+rptEl('rptPrint').addEventListener('click', rptPrint);
+rptEl('rptCsv').addEventListener('click', rptCsv);
+rptEl('view-reports').addEventListener('click', (e) => {
+  if (e.target.id === 'rptGoAttention') { e.preventDefault(); rptEl('rptReport').value = 'attention'; rptRun(false); }
+});
 
 function computeUtilizationRows(byPerson) {
   const rows = Object.entries(byPerson).sort((a, b) => a[1].name.localeCompare(b[1].name));
@@ -1761,15 +2175,6 @@ async function fetchUtilizationData(referenceDate) {
 
 let calUtilizationTicket = 0;
 async function renderUtilization() {
-  // Reports panel: always a stable "right now" snapshot, independent of calendar browsing.
-  const reportBody = document.getElementById('utilizationBody');
-  if (reportBody) {
-    const result = await fetchUtilizationData(new Date());
-    reportBody.innerHTML = result.rowsHtml;
-    const filter = document.getElementById('reportWorkerFilter') ? document.getElementById('reportWorkerFilter').value : '';
-    document.getElementById('utilizationHighlight').innerHTML = result.highlightHtml(canSeeAll() ? filter : String(me.id));
-  }
-
   // Calendar panel: follows whichever week/month is currently on screen.
   const calBody = document.getElementById('calUtilizationBody');
   if (calBody) {
@@ -1790,28 +2195,6 @@ async function renderUtilization() {
     document.getElementById('calUtilizationHighlight').innerHTML = result.highlightHtml(canSeeAll() ? filter : String(me.id));
   }
 }
-
-function exportReportPdf() {
-  const start = document.getElementById('reportStart').value;
-  const end = document.getElementById('reportEnd').value;
-  const html = `
-    ${printHeaderHtml()}
-    <h1>Time report \u2014 ${escapeHtml(start)} to ${escapeHtml(end)}${lastReportClientName ? ' \u2014 ' + escapeHtml(lastReportClientName) : ''}</h1>
-    <div class="print-sub">Exported ${new Date().toLocaleString()}</div>
-    ${lastReportGroups.map(group => `
-      <h3>${reportHeading(group)}</h3>
-      <table class="report-table">
-        ${REPORT_COLGROUP}
-        <thead><tr><th>Date</th><th>Job</th><th>Type of work</th><th>Client</th><th>Location</th><th>Time</th><th>Estimated</th><th>Duration</th></tr></thead>
-        <tbody>${group.rows.map(r => reportRowHtml(r, true)).join('')}</tbody>
-      </table>`).join('')}`;
-  document.getElementById('printArea').innerHTML = html;
-  window.print();
-}
-
-document.getElementById('runReportBtn').addEventListener('click', runReport);
-document.getElementById('reportWorkerFilter').addEventListener('change', renderUtilization);
-document.getElementById('exportReportBtn').addEventListener('click', () => { if (!lastReportGroups.length) runReport().then(exportReportPdf); else exportReportPdf(); });
 
 function renderCard(a, dStr) {
   const el = document.createElement('div');
