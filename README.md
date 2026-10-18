@@ -14,6 +14,8 @@ Each company that deploys it gets its own copy, with its own logo, details and c
 
 The button needs nothing typed in. **Open your Worker's address straight after it deploys and create the admin account** (see [First run](#first-run)). Until an admin exists, the first person to open the setup screen becomes the admin, so don't leave it. For extra protection, see [Optional secrets](#optional-secrets).
 
+Want to look around first? [Try it live](https://testbox.max-christensen.workers.dev) and click "Try the demo". It signs you in as a read-only viewer on a made-up company, so you can click through the calendar, clients, team and reports, but nothing can be changed.
+
 Prefer to do everything by hand? Follow [Set it up](#set-it-up).
 
 ## Screenshots
@@ -122,7 +124,7 @@ npx wrangler secret put SESSION_SECRET
 
 ## Read-only demo login (optional)
 
-To let people look around without being able to change anything, add a team member with the role **Viewer (read-only)** and set a plain variable called `DEMO_LOGIN_EMAIL` to that person's email address (in the Cloudflare dashboard under **Settings → Variables and Secrets**, or `[vars]` in `wrangler.toml`). The login screen then shows a short line saying it's a read-only demo and a **Try the demo** button. The button signs in with the password `demo1234`, so give the viewer that password, and only do this on a copy that holds nothing private. A demo viewer also skips the emailed code. When the variable isn't set, nothing changes.
+To let people look around without being able to change anything, add a team member with the role **Viewer (read-only)** and set a plain variable called `DEMO_LOGIN_EMAIL` to that person's email address (in the Cloudflare dashboard under **Settings → Variables and Secrets**, or `[vars]` in `wrangler.toml`). The login screen then shows a short line saying it's a read-only demo and a **Try the demo** button. The button signs in with the password `demo1234`, so give the viewer that password, and only do this on a copy that holds nothing private. A demo viewer also skips the emailed code. When the variable isn't set, nothing changes. The live demo linked at the top of this page is run exactly this way.
 
 ## Two-factor login (optional)
 
