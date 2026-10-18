@@ -8,13 +8,13 @@ Wrangla is a scheduling app for small businesses that run on people and tasks: c
 
 Each company that deploys it gets its own copy, with its own logo, details and colours.
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/max-christensen/wrangla)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/max-christensen/wrangla) <a href="https://testbox.max-christensen.workers.dev"><img src="https://img.shields.io/badge/Try%20it%20live-read--only%20demo-3B6E71?style=for-the-badge" alt="Try it live: read-only demo" height="37"></a>
 
 **Using the button:** it creates the Worker, the D1 database and the R2 bucket from `wrangler.toml`, and the deploy script loads the database tables for you (it runs [schema.sql](schema.sql), which is safe to run on every deploy). Nothing to run afterwards.
 
 The button needs nothing typed in. **Open your Worker's address straight after it deploys and create the admin account** (see [First run](#first-run)). Until an admin exists, the first person to open the setup screen becomes the admin, so don't leave it. For extra protection, see [Optional secrets](#optional-secrets).
 
-Want to look around first? [Try it live](https://testbox.max-christensen.workers.dev) and click "Try the demo". It signs you in as a read-only viewer on a made-up company, so you can click through the calendar, clients, team and reports, but nothing can be changed.
+Want to look around first? Click **Try it live** above, then "Try the demo". It signs you in as a read-only viewer on a made-up company, so you can click through the calendar, clients, team and reports, but nothing can be changed.
 
 Prefer to do everything by hand? Follow [Set it up](#set-it-up).
 
