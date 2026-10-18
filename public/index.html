@@ -1579,6 +1579,7 @@ async function fetchUtilizationData(referenceDate) {
   return computeUtilizationRows(byPerson);
 }
 
+let calUtilizationTicket = 0;
 async function renderUtilization() {
   // Reports panel: always a stable "right now" snapshot, independent of calendar browsing.
   const reportBody = document.getElementById('utilizationBody');
@@ -1593,11 +1594,15 @@ async function renderUtilization() {
   const calBody = document.getElementById('calUtilizationBody');
   if (calBody) {
     // Month view shows the week containing today when viewing the current month, otherwise the week containing the 1st.
+    // The view is read once, before any waiting, and only the newest request may draw: switching views quickly
+    // must not leave the label from one view above the figures from another.
+    const mode = viewMode, ticket = ++calUtilizationTicket;
     const today = new Date();
-    const viewingThisMonth = viewMode === 'month' && monthStart.getFullYear() === today.getFullYear() && monthStart.getMonth() === today.getMonth();
-    const referenceDate = viewMode === 'week' ? weekStart : (viewingThisMonth ? today : monthStart);
+    const viewingThisMonth = mode === 'month' && monthStart.getFullYear() === today.getFullYear() && monthStart.getMonth() === today.getMonth();
+    const referenceDate = mode === 'week' ? weekStart : (viewingThisMonth ? today : monthStart);
     const result = await fetchUtilizationData(referenceDate);
-    const weekNote = viewMode === 'month' ? (viewingThisMonth ? ' (this week)' : ' (the week containing the 1st)') : '';
+    if (ticket !== calUtilizationTicket) return;
+    const weekNote = mode === 'month' ? (viewingThisMonth ? ' (this week)' : ' (the week containing the 1st)') : '';
     document.getElementById('calUtilizationLabel').textContent =
       `Week of ${dayLabel(startOfWeek(referenceDate))}${weekNote} \u00b7 ${new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}`;
     calBody.innerHTML = result.rowsHtml;
