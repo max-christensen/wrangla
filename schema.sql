@@ -139,3 +139,39 @@ CREATE TABLE IF NOT EXISTS item_people (
   PRIMARY KEY (appointment_id, user_id)
 );
 CREATE INDEX IF NOT EXISTS idx_item_people_user ON item_people(user_id);
+
+-- The types of work used on jobs, and how many jobs use each, so the "type of work" suggestions don't have to count every job.
+-- The triggers keep it right whenever a job is created, deleted or has its type changed (renamed, cleared or set), whichever
+-- way that happens. The two statements at the end fill it from the jobs; they only ever touch this table, so they are
+-- safe to run again and again, and bring an existing install's list up to date.
+CREATE TABLE IF NOT EXISTS job_types (
+  name TEXT PRIMARY KEY,
+  uses INTEGER NOT NULL
+);
+
+CREATE TRIGGER IF NOT EXISTS job_types_after_insert AFTER INSERT ON appointments
+WHEN NEW.job_type IS NOT NULL AND NEW.job_type != ''
+BEGIN
+  INSERT INTO job_types (name, uses) VALUES (NEW.job_type, 1)
+  ON CONFLICT(name) DO UPDATE SET uses = uses + 1;
+END;
+
+CREATE TRIGGER IF NOT EXISTS job_types_after_delete AFTER DELETE ON appointments
+WHEN OLD.job_type IS NOT NULL AND OLD.job_type != ''
+BEGIN
+  UPDATE job_types SET uses = uses - 1 WHERE name = OLD.job_type;
+  DELETE FROM job_types WHERE uses <= 0;
+END;
+
+CREATE TRIGGER IF NOT EXISTS job_types_after_update AFTER UPDATE OF job_type ON appointments
+WHEN OLD.job_type IS NOT NEW.job_type
+BEGIN
+  UPDATE job_types SET uses = uses - 1 WHERE OLD.job_type IS NOT NULL AND OLD.job_type != '' AND name = OLD.job_type;
+  DELETE FROM job_types WHERE uses <= 0;
+  INSERT INTO job_types (name, uses) SELECT NEW.job_type, 1 WHERE NEW.job_type IS NOT NULL AND NEW.job_type != ''
+  ON CONFLICT(name) DO UPDATE SET uses = uses + 1;
+END;
+
+INSERT OR REPLACE INTO job_types (name, uses)
+  SELECT job_type, COUNT(*) FROM appointments WHERE job_type IS NOT NULL AND job_type != '' GROUP BY job_type;
+DELETE FROM job_types WHERE name NOT IN (SELECT job_type FROM appointments WHERE job_type IS NOT NULL AND job_type != '');

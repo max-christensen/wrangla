@@ -1293,13 +1293,19 @@ async function renderWorkerList() {
 }
 
 // ---------- client view ----------
-// One client's jobs (or every client's) as a list grouped by job site: upcoming first, past ones tucked under "Past".
-// Rows open the same job window the week and month views use.
+// One client's jobs, or every client at a glance, as lists grouped by job site: upcoming first, past ones tucked under "Past".
+// With one client chosen their jobs load at once. With All clients the server sends one small row per client (its name and
+// how many jobs are upcoming), and a client's jobs load only when that client is opened. Searching all clients asks the
+// server for the matching jobs, a moment after typing stops. Rows open the same job window the week and month views use.
 
 let cvClientId = '';          // '' means All clients
-let cvItems = [];             // the jobs loaded for the picker's current choice
+let cvItems = [];             // one client chosen: that client's jobs
+let cvSummary = null;         // All clients: { clients: [{ id, name, upcoming }], no_client } from the server
+const cvJobs = new Map();     // All clients: a client's jobs (0 = jobs with no client), loaded when that client is opened
+const cvLoading = new Map();  // which of those are on their way (client id -> the render that asked)
+let cvMatches = null;         // All clients, searching: the jobs the server found
 const cvOpen = new Set();     // which collapsible parts are open, so a refresh keeps them that way
-let cvRenderTicket = 0;
+let cvRenderTicket = 0, cvSearchTicket = 0, cvSearchTimer = null;
 
 function cvDateText(iso) {
   const d = parseLocalDate(iso);
@@ -1360,35 +1366,95 @@ function cvListHtml(items, key, forceOpen) {
       <summary>Past <span class="cv-count">${past.length}</span></summary>${cvGroupsHtml(past)}</details>` : '');
 }
 
+const cvQuery = () => document.getElementById('cvSearch').value.trim().toLowerCase();
+
+// One client chosen: the search narrows the jobs already here.
 function cvFiltered() {
-  const q = document.getElementById('cvSearch').value.trim().toLowerCase();
+  const q = cvQuery();
   if (!q) return { items: cvItems, searching: false };
   return { items: cvItems.filter(a => a.title.toLowerCase().includes(q) || cvSiteOf(a).label.toLowerCase().includes(q)), searching: true };
 }
 
+// What sits inside one client's collapsible row: its name and count, then (once loaded) its jobs.
+function cvClientInner(name, up, body) {
+  return `
+      <summary><span class="cv-client-name">${escapeHtml(name)}</span><span class="cv-upcoming">${up} upcoming</span></summary>
+      ${body}
+    `;
+}
+function cvClientBody(id, jobs, open, searching) {
+  const key = 'c' + id;
+  if (jobs) return jobs.length ? cvListHtml(jobs, key, searching) : '<p class="cv-empty">No jobs yet.</p>';
+  return open ? '<p class="cv-empty">Loading…</p>' : '';
+}
+function cvSummaryRows() {
+  if (!cvSummary) return [];
+  return [...cvSummary.clients.map(c => ({ id: c.id, name: c.name, up: c.upcoming })),
+    ...(cvSummary.no_client ? [{ id: 0, name: 'No client', up: cvSummary.no_client.upcoming }] : [])];
+}
+
 function cvDraw() {
   const box = document.getElementById('cvBody');
-  const { items, searching } = cvFiltered();
   const today = fmtDate(new Date());
   if (cvClientId) {
+    const { items, searching } = cvFiltered();
     const name = (clients.find(c => String(c.id) === String(cvClientId)) || {}).name || '';
     const up = items.filter(a => cvLastDate(a) >= today).length;
     box.innerHTML = `<p class="cv-summary">${escapeHtml(name)}: ${up} upcoming, ${items.length - up} past${searching ? ' (matching your search)' : ''}.</p>` +
       (items.length ? cvListHtml(items, 'c' + cvClientId, searching) : `<p class="cv-empty">${searching ? 'No jobs match your search.' : 'No jobs for this client yet.'}</p>`);
     return;
   }
-  const byClient = new Map();
-  for (const a of items) { const k = a.client_id || 0; if (!byClient.has(k)) byClient.set(k, []); byClient.get(k).push(a); }
-  const rows = [...clients.map(c => ({ id: c.id, name: c.name })), { id: 0, name: 'No client' }]
-    .map(c => ({ ...c, jobs: byClient.get(c.id) || [] }))
-    .filter(c => (c.id !== 0 || c.jobs.length) && (!searching || c.jobs.length));
-  box.innerHTML = rows.length ? rows.map(c => {
-    const up = c.jobs.filter(a => cvLastDate(a) >= today).length, key = 'c' + c.id;
-    return `<details class="cv-client" data-key="${key}"${searching || cvOpen.has(key) ? ' open' : ''}>
-      <summary><span class="cv-client-name">${escapeHtml(c.name)}</span><span class="cv-upcoming">${up} upcoming</span></summary>
-      ${c.jobs.length ? cvListHtml(c.jobs, key, searching) : '<p class="cv-empty">No jobs yet.</p>'}
-    </details>`;
-  }).join('') : '<p class="cv-empty">No jobs match your search.</p>';
+  if (cvQuery()) { // All clients, searching: the matching jobs, grouped by client, each client open
+    if (!cvMatches) { box.innerHTML = '<p class="cv-empty">Searching…</p>'; return; }
+    const byClient = new Map();
+    for (const a of cvMatches) { const k = a.client_id || 0; if (!byClient.has(k)) byClient.set(k, []); byClient.get(k).push(a); }
+    const rows = [...clients.map(c => ({ id: c.id, name: c.name })), { id: 0, name: 'No client' }]
+      .map(c => ({ ...c, jobs: byClient.get(c.id) || [] }))
+      .filter(c => c.jobs.length);
+    box.innerHTML = rows.length ? rows.map(c => {
+      const up = c.jobs.filter(a => cvLastDate(a) >= today).length;
+      return `<details class="cv-client" data-key="c${c.id}" open>${cvClientInner(c.name, up, cvClientBody(c.id, c.jobs, true, true))}</details>`;
+    }).join('') : '<p class="cv-empty">No jobs match your search.</p>';
+    return;
+  }
+  if (!cvSummary) { box.innerHTML = '<p class="cv-empty">Loading…</p>'; return; }
+  box.innerHTML = cvSummaryRows().map(c => {
+    const key = 'c' + c.id, open = cvOpen.has(key);
+    return `<details class="cv-client" data-key="${key}"${open ? ' open' : ''}>${cvClientInner(c.name, c.up, cvClientBody(c.id, cvJobs.get(c.id), open, false))}</details>`;
+  }).join('');
+}
+
+// All clients: fetch one client's jobs (when it is opened, or again after a refresh) and fill in just that row.
+async function cvLoadClient(id, ticket) {
+  if (cvJobs.has(id) || cvLoading.get(id) === ticket) return;
+  cvLoading.set(id, ticket);
+  let html;
+  try {
+    const items = await api('/appointments?client_id=' + (id ? encodeURIComponent(id) : 'none'));
+    if (ticket !== cvRenderTicket || cvClientId || cvQuery()) return;   // the screen has moved on
+    cvJobs.set(id, items.filter(a => a.dates && a.dates.length));
+  } catch (err) {
+    if (ticket !== cvRenderTicket) return;
+    html = `<p class="cv-empty">${escapeHtml(err.message)}</p>`;
+  } finally {
+    if (cvLoading.get(id) === ticket) cvLoading.delete(id);
+  }
+  const row = cvSummaryRows().find(c => c.id === id), d = document.querySelector(`details.cv-client[data-key="c${id}"]`);
+  if (!row || !d || cvClientId || cvQuery()) return;
+  d.innerHTML = cvClientInner(row.name, row.up, html || cvClientBody(id, cvJobs.get(id), true, false));
+}
+
+// All clients, searching: the server finds the matching jobs. Only the newest question may draw its answer.
+async function cvSearchNow() {
+  const q = cvQuery();
+  if (!q || cvClientId) return;
+  const seq = ++cvSearchTicket;
+  let items;
+  try { items = await api('/appointments?q=' + encodeURIComponent(q)); }
+  catch (err) { if (seq === cvSearchTicket) document.getElementById('cvBody').innerHTML = `<p class="cv-empty">${escapeHtml(err.message)}</p>`; return; }
+  if (seq !== cvSearchTicket || cvClientId || cvQuery() !== q) return;
+  cvMatches = items.filter(a => a.dates && a.dates.length);
+  cvDraw();
 }
 
 async function renderClientView() {
@@ -1398,23 +1464,54 @@ async function renderClientView() {
   sel.innerHTML = '<option value="">All clients</option>' + clients.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
   sel.value = keep; cvClientId = sel.value;
   const ticket = ++cvRenderTicket;
-  const items = await api('/appointments' + (cvClientId ? `?client_id=${encodeURIComponent(cvClientId)}` : ''));
-  if (ticket !== cvRenderTicket) return;      // a newer request has taken over
-  cvItems = items.filter(a => a.dates && a.dates.length);
+  clearTimeout(cvSearchTimer);
+  if (cvClientId) {
+    const items = await api('/appointments?client_id=' + encodeURIComponent(cvClientId));
+    if (ticket !== cvRenderTicket) return;      // a newer request has taken over
+    cvItems = items.filter(a => a.dates && a.dates.length);
+    cvDraw();
+    return;
+  }
+  if (cvQuery()) { await cvSearchNow(); return; }
+  const summary = await api('/client-summary?today=' + encodeURIComponent(fmtDate(new Date())));
+  if (ticket !== cvRenderTicket) return;
+  cvSummary = summary; cvJobs.clear(); cvLoading.clear(); cvMatches = null;
   cvDraw();
+  // anything that was open before this refresh gets its jobs again
+  await Promise.all([...cvOpen].filter(k => /^c\d+$/.test(k)).map(k => +k.slice(1)).filter(id => cvSummaryRows().some(c => c.id === id)).map(id => cvLoadClient(id, ticket)));
 }
 
+const cvFindJob = id => cvItems.find(a => a.id === id) || [...cvJobs.values()].flat().find(a => a.id === id) || (cvMatches || []).find(a => a.id === id);
+
 document.getElementById('cvClient').addEventListener('change', (e) => { cvClientId = e.target.value; renderClientView(); });
-document.getElementById('cvSearch').addEventListener('input', cvDraw);
+document.getElementById('cvSearch').addEventListener('input', () => {
+  if (cvClientId) { cvDraw(); return; }          // one client chosen: their jobs are already here
+  clearTimeout(cvSearchTimer);
+  if (!cvQuery()) {                              // search cleared: back to the list of clients
+    cvSearchTicket++; cvMatches = null;
+    if (cvSummary) cvDraw(); else renderClientView();
+    return;
+  }
+  cvDraw();                                      // shows "Searching..." the first time, then the last answer until the next arrives
+  cvSearchTimer = setTimeout(cvSearchNow, 300);
+});
 const cvBox = document.getElementById('clientView');
 cvBox.addEventListener('toggle', (e) => {
   const key = e.target.dataset && e.target.dataset.key;
-  if (!key || document.getElementById('cvSearch').value.trim()) return; // searching opens things itself; don't remember that
+  if (!key || cvQuery()) return;                // searching opens things itself; don't remember that
   if (e.target.open) cvOpen.add(key); else cvOpen.delete(key);
+  if (e.target.open && !cvClientId && /^c\d+$/.test(key)) {   // a client was opened: get its jobs
+    const id = +key.slice(1);
+    if (!cvJobs.has(id)) {
+      const row = cvSummaryRows().find(c => c.id === id);
+      if (row && !e.target.querySelector('.cv-group, .cv-empty')) e.target.innerHTML = cvClientInner(row.name, row.up, cvClientBody(id, null, true, false));
+      cvLoadClient(id, cvRenderTicket);
+    }
+  }
 }, true);
 cvBox.addEventListener('click', (e) => {
   const row = e.target.closest('.cv-row');
-  if (row) openActivityModal(cvItems.find(a => a.id === parseInt(row.dataset.id, 10)));
+  if (row) openActivityModal(cvFindJob(parseInt(row.dataset.id, 10)));
 });
 cvBox.addEventListener('keydown', (e) => {
   const row = e.target.closest && e.target.closest('.cv-row');
@@ -1425,14 +1522,41 @@ document.getElementById('newActivityBtn').addEventListener('click', () => {
   if (viewMode === 'client' && cvClientId) { document.getElementById('fClient').value = cvClientId; updateSiteOptions(); }
 });
 
+// Each time the calendar is drawn it gets one "render cycle". The grid and the Utilisation panel ask the cycle for the jobs
+// in a date range, and if a list it already fetched covers the range (the same week, or a month grid that holds the
+// week and the month) they share it instead of asking the server again. A cycle lives for one draw only, so an edit
+// always draws from fresh data, and a draw that has been overtaken by a newer one stops without touching the screen.
+let renderCycleCount = 0, currentCycle = null;
+function newCycle() { currentCycle = { id: ++renderCycleCount, lists: [] }; return currentCycle; }
+
+// The jobs a narrower request would have returned, worked out from a list that covers it: the jobs with a day or logged
+// hours inside the range (and the person, if one is asked for), with the logged hours trimmed to the range.
+function narrowItems(items, start, end, person) {
+  return items
+    .filter(a => (!person || (a.people || []).some(p => String(p.id) === String(person))) &&
+      (a.dates.some(d => d >= start && d <= end) || (a.entries || []).some(e => e.work_date >= start && e.work_date <= end)))
+    .map(a => ({ ...a, entries: (a.entries || []).filter(e => e.work_date >= start && e.work_date <= end) }));
+}
+function listItems(cycle, start, end, person) {
+  const hit = cycle.lists.find(l => l.start <= start && l.end >= end && (!l.person || l.person === person));
+  if (hit) return hit.promise.then(items => (hit.start === start && hit.end === end && hit.person === person) ? items : narrowItems(items, start, end, person));
+  let url = `/appointments?start=${start}&end=${end}`;
+  if (person) url += `&assigned_to=${person}`;
+  const entry = { start, end, person, promise: api(url) };
+  cycle.lists.push(entry);
+  return entry.promise;
+}
+
 async function renderCurrentView() {
+  const cycle = newCycle();
   const phone = isPhoneWorker();
   document.getElementById('view-calendar').classList.toggle('phone-list', phone);
   document.getElementById('view-calendar').classList.toggle('client-mode', viewMode === 'client');
   if (phone) { await renderWorkerList(); return; }
   if (viewMode === 'client') { await renderClientView(); return; }
-  await (viewMode === 'week' ? renderWeek() : renderMonth());
-  renderUtilization();
+  await (viewMode === 'week' ? renderWeek(cycle) : renderMonth(cycle));
+  if (cycle !== currentCycle) return;
+  renderUtilization(cycle);
 }
 
 // ---- helpers for items that span several days and have per-day hours ----
@@ -1510,14 +1634,13 @@ async function moveItemToDay(id, fromDate, toDate) {
   await renderCurrentView();
 }
 
-async function renderWeek() {
+async function renderWeek(cycle = newCycle()) {
   const end = addDays(weekStart, 6);
   document.getElementById('weekLabel').textContent = dayLabel(weekStart) + ' \u2013 ' + dayLabel(end);
 
   const filter = document.getElementById('workerFilter').value;
-  let url = `/appointments?start=${fmtDate(weekStart)}&end=${fmtDate(end)}`;
-  if (filter) url += `&assigned_to=${filter}`;
-  const items = await api(url);
+  const items = await listItems(cycle, fmtDate(weekStart), fmtDate(end), filter);
+  if (cycle !== currentCycle) return;      // a newer draw has started; it will show the right thing
   lastRenderedItems = items;
   lastRenderedRange = { start: fmtDate(weekStart), end: fmtDate(end) };
 
@@ -1538,15 +1661,14 @@ async function renderWeek() {
   }
 }
 
-async function renderMonth() {
+async function renderMonth(cycle = newCycle()) {
   document.getElementById('weekLabel').textContent = monthStart.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 
   const gridStart = startOfWeek(monthStart);
   const gridEnd = addDays(gridStart, 41); // 6 weeks
   const filter = document.getElementById('workerFilter').value;
-  let url = `/appointments?start=${fmtDate(gridStart)}&end=${fmtDate(gridEnd)}`;
-  if (filter) url += `&assigned_to=${filter}`;
-  const items = await api(url);
+  const items = await listItems(cycle, fmtDate(gridStart), fmtDate(gridEnd), filter);
+  if (cycle !== currentCycle) return;      // a newer draw has started; it will show the right thing
   lastRenderedItems = items;
   lastRenderedRange = { start: fmtDate(gridStart), end: fmtDate(gridEnd) };
 
@@ -2147,14 +2269,14 @@ function computeUtilizationRows(byPerson) {
 }
 
 // Estimates come from the days an item occupies, hours from time entries (one row per person per day).
-async function fetchUtilizationData(referenceDate) {
+async function fetchUtilizationData(referenceDate, cycle = newCycle()) {
   const wStart = startOfWeek(referenceDate), wEnd = addDays(wStart, 6);
   const mStart = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1);
   const mEnd = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 0);
-  const [weekItems, monthItems] = await Promise.all([
-    api(`/appointments?start=${fmtDate(wStart)}&end=${fmtDate(wEnd)}`),
-    api(`/appointments?start=${fmtDate(mStart)}&end=${fmtDate(mEnd)}`),
-  ]);
+  // Month first: when the week lies inside it, the week is worked out from the same list. Both also reuse the calendar's own list.
+  const monthPromise = listItems(cycle, fmtDate(mStart), fmtDate(mEnd), '');
+  const weekPromise = listItems(cycle, fmtDate(wStart), fmtDate(wEnd), '');
+  const [monthItems, weekItems] = await Promise.all([monthPromise, weekPromise]);
   const byPerson = {};
   const person = (id, name) => (byPerson[id] ||= { name, weekEst: 0, weekAct: 0, monthEst: 0, monthAct: 0 });
   function tally(items, from, to, prefix) {
@@ -2174,7 +2296,7 @@ async function fetchUtilizationData(referenceDate) {
 }
 
 let calUtilizationTicket = 0;
-async function renderUtilization() {
+async function renderUtilization(cycle = currentCycle || newCycle()) {
   // Calendar panel: follows whichever week/month is currently on screen.
   const calBody = document.getElementById('calUtilizationBody');
   if (calBody) {
@@ -2185,7 +2307,7 @@ async function renderUtilization() {
     const today = new Date();
     const viewingThisMonth = mode === 'month' && monthStart.getFullYear() === today.getFullYear() && monthStart.getMonth() === today.getMonth();
     const referenceDate = mode === 'week' ? weekStart : (viewingThisMonth ? today : monthStart);
-    const result = await fetchUtilizationData(referenceDate);
+    const result = await fetchUtilizationData(referenceDate, cycle);
     if (ticket !== calUtilizationTicket) return;
     const weekNote = mode === 'month' ? (viewingThisMonth ? ' (this week)' : ' (the week containing the 1st)') : '';
     document.getElementById('calUtilizationLabel').textContent =

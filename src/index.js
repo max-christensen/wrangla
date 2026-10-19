@@ -570,11 +570,19 @@ async function handleDeleteSite(env, id) {
 
 // ---- job type suggestions (free text, but we remember what's been typed before) ----
 
+// The types of work seen on past jobs, most used first. They are kept in a small table (job_types, filled and kept
+// correct by triggers in schema.sql), so this reads a handful of rows instead of every job. If the table is not there
+// yet (new code, schema not yet loaded) it falls back to counting the jobs, which gives the same list.
 async function handleListJobTypes(env) {
-  const { results } = await env.DB.prepare(
-    "SELECT job_type, COUNT(*) AS uses FROM appointments WHERE job_type IS NOT NULL AND job_type != '' GROUP BY job_type ORDER BY uses DESC, job_type"
-  ).all();
-  return json(results.map(r => r.job_type));
+  try {
+    const { results } = await env.DB.prepare("SELECT name FROM job_types ORDER BY uses DESC, name").all();
+    return json(results.map(r => r.name));
+  } catch (e) {
+    const { results } = await env.DB.prepare(
+      "SELECT job_type, COUNT(*) AS uses FROM appointments WHERE job_type IS NOT NULL AND job_type != '' GROUP BY job_type ORDER BY uses DESC, job_type"
+    ).all();
+    return json(results.map(r => r.job_type));
+  }
 }
 
 // ---- job comments (running notes thread, everyone can see and post) ----
@@ -669,11 +677,40 @@ async function longestJobDays(env) {
   return n >= 1 ? n : MAX_ITEM_DAYS;
 }
 
+// People and logged times come back in a fixed order (people in the order they were added, times by day and then by when
+// they were saved). SQL used to sort them, which counts every sorted row as read a second time, so they are sorted here instead.
+const byRowId = (a, b) => a.rid - b.rid;
+const byDayThenId = (a, b) => (a.work_date < b.work_date ? -1 : a.work_date > b.work_date ? 1 : a.id - b.id);
+
 // The date test for a range. `exact` is the real test (the job starts on or before the end, and its days reach the
 // start); the two window tests in front of it only throw away jobs that could never pass it (nothing reaches back
 // further than the longest job allows), and they are written so that SQLite can use the date indexes instead of
 // reading every job. The unary + keeps SQLite from using the other date index for the "no scheduled date" test,
 // which would read every task.
+// Search for the Client view: a job matches when its title, or the name of its place (the site name, a one-off address,
+// "Head office" or "Tasks"), contains the words typed, ignoring case. This is the exact test (what the page used to do
+// on every job it had loaded) ...
+function searchPlaceName(a, siteName) {
+  if (a.activity_type === "task") return "Tasks";
+  if (a.site_id) return siteName || "Job site";
+  if (a.location_type === "project_site" && a.site_address) return a.site_address;
+  return "Head office";
+}
+function jobMatchesSearch(a, siteName, q) {
+  return String(a.title || "").toLowerCase().includes(q) || searchPlaceName(a, siteName).toLowerCase().includes(q);
+}
+// ... and this is a cheaper test in SQL that never rejects a real match (it may let a few extra through, and the exact test
+// above then removes them). SQLite only lowercases plain letters, so any text with other characters is let through too.
+function searchPrefilter(q) {
+  const has = col => `(instr(lower(${col}), ?) > 0 OR ${col} GLOB '*[^ -~]*')`;
+  const parts = [has("a.title"), has("a.site_address"), `a.site_id IN (SELECT s.id FROM project_sites s WHERE ${has("s.name")})`];
+  const params = [q, q, q];
+  if ("tasks".includes(q)) parts.push("a.activity_type = 'task'");
+  if ("head office".includes(q)) parts.push("a.site_id IS NULL");
+  if ("job site".includes(q)) parts.push("a.site_id IS NOT NULL");
+  return { sql: parts.join(" OR "), params };
+}
+
 function dateRangeClause(startExpr, start, end, longestDays) {
   const lo = addDaysIso(start, -(longestDays * 2 + 3));
   const exact = `${startExpr} <= ? AND date(${startExpr}, '+' || (a.days * 2 + 3) || ' days') >= ?`;
@@ -689,7 +726,8 @@ async function handleListAppointments(request, env, user) {
   const start = url.searchParams.get("start");
   const end = url.searchParams.get("end");
   const assignedTo = url.searchParams.get("assigned_to");
-  const clientId = url.searchParams.get("client_id"); // optional: only this client's items (used by the Client view)
+  const clientId = url.searchParams.get("client_id"); // optional: only this client's items ("none" for jobs with no client)
+  const q = (url.searchParams.get("q") || "").trim().toLowerCase(); // optional: only jobs matching these words (Client view search)
   const skipWeekends = await skipWeekendsOn(env);
   const startExpr = "COALESCE(a.scheduled_date, a.due_date)";
 
@@ -710,9 +748,17 @@ async function handleListAppointments(request, env, user) {
     params.push(assignedTo);
   }
 
-  if (clientId) {
+  if (clientId === "none") {
+    sql += " AND a.client_id IS NULL";
+  } else if (clientId) {
     sql += " AND a.client_id = ?";
     params.push(clientId);
+  }
+
+  if (q) {
+    const find = searchPrefilter(q);
+    sql += ` AND (${find.sql})`;
+    params.push(...find.params);
   }
 
   // A job is in the range if its days reach into it (a multi-day job can start before the range), or if someone logged
@@ -731,7 +777,12 @@ async function handleListAppointments(request, env, user) {
   }
   sql += ` ORDER BY ${startExpr}, a.id`;
 
-  const { results } = await env.DB.prepare(sql).bind(...params).all();
+  let { results } = await env.DB.prepare(sql).bind(...params).all();
+  if (q) { // the exact test, now that the cheap one has narrowed things down
+    const { results: siteRows } = await env.DB.prepare("SELECT id, name FROM project_sites").all();
+    const siteNames = new Map(siteRows.map(x => [x.id, x.name]));
+    results = results.filter(a => jobMatchesSearch(a, siteNames.get(a.site_id), q));
+  }
 
   // Who is on these jobs and the hours logged on them: only for the jobs being returned. User names come from one read of
   // the (small) users table rather than a join on every row.
@@ -741,13 +792,13 @@ async function handleListAppointments(request, env, user) {
   if (results.length) {
     const ids = results.map(a => a.id);
     const peopleStmts = statementsForIds(env, ids,
-      "SELECT ip.appointment_id, ip.user_id FROM item_people ip WHERE ip.appointment_id IN ({IDS}) ORDER BY ip.rowid",
-      "SELECT ip.appointment_id, ip.user_id FROM item_people ip ORDER BY ip.rowid");
+      "SELECT ip.appointment_id, ip.user_id, ip.rowid AS rid FROM item_people ip WHERE ip.appointment_id IN ({IDS})",
+      "SELECT ip.appointment_id, ip.user_id, ip.rowid AS rid FROM item_people ip");
     const entryStmts = start && end
-      ? [env.DB.prepare("SELECT te.* FROM time_entries te WHERE te.work_date BETWEEN ? AND ? ORDER BY te.work_date, te.id").bind(start, end)]
+      ? [env.DB.prepare("SELECT te.* FROM time_entries te WHERE te.work_date BETWEEN ? AND ?").bind(start, end)]
       : statementsForIds(env, ids,
-        "SELECT te.* FROM time_entries te WHERE te.appointment_id IN ({IDS}) ORDER BY te.work_date, te.id",
-        "SELECT te.* FROM time_entries te ORDER BY te.work_date, te.id");
+        "SELECT te.* FROM time_entries te WHERE te.appointment_id IN ({IDS})",
+        "SELECT te.* FROM time_entries te");
     const rs = await env.DB.batch([
       env.DB.prepare("SELECT id, name, color FROM users"),
       env.DB.prepare("SELECT id, name, nickname, address FROM clients"),
@@ -756,11 +807,11 @@ async function handleListAppointments(request, env, user) {
     const usersById = new Map(rs[0].results.map(u => [u.id, u]));
     clientsById = new Map(rs[1].results.map(c => [c.id, c]));
     sitesById = new Map(rs[2].results.map(x => [x.id, x]));
-    for (const r of rs.slice(3, 3 + peopleStmts.length).flatMap(x => x.results)) {
+    for (const r of rs.slice(3, 3 + peopleStmts.length).flatMap(x => x.results).sort(byRowId)) {
       const u = usersById.get(r.user_id);
       if (u) (peopleByItem[r.appointment_id] ||= []).push({ id: u.id, name: u.name, color: u.color });
     }
-    for (const e of rs.slice(3 + peopleStmts.length).flatMap(x => x.results)) {
+    for (const e of rs.slice(3 + peopleStmts.length).flatMap(x => x.results).sort(byDayThenId)) {
       const u = usersById.get(e.user_id);
       if (u) (entriesByItem[e.appointment_id] ||= []).push({ ...e, user_name: u.name });
     }
@@ -785,6 +836,45 @@ async function handleListAppointments(request, env, user) {
     items.push(a);
   }
   return json(items);
+}
+
+// ---- client summary: one small row per client for the Client view, so the jobs themselves load only when a client is opened ----
+// "Upcoming" means the job's last day is today or later, where today is the date the page sends (the browser's own date).
+// The same people see the same jobs as in the list: a worker only counts their own jobs and unassigned ones.
+async function handleClientSummary(request, env, user) {
+  const today = new URL(request.url).searchParams.get("today");
+  if (!validIsoDate(today)) return json({ error: "Missing date" }, 400);
+  const skipWeekends = await skipWeekendsOn(env);
+  const worker = user.role !== "admin" && user.role !== "viewer";
+  const who = worker
+    ? ` AND (EXISTS (SELECT 1 FROM item_people ip WHERE ip.appointment_id = a.id AND ip.user_id = ?)
+            OR NOT EXISTS (SELECT 1 FROM item_people ip WHERE ip.appointment_id = a.id))`
+    : "";
+  const whoParams = worker ? [user.id] : [];
+  const lo = addDaysIso(today, -((await longestJobDays(env)) * 2 + 3));
+
+  // (Grouping by +client_id rather than client_id keeps SQLite from walking the whole client index to avoid a sort.)
+  // Jobs that start today or later are all upcoming. Jobs that started earlier are upcoming only if they run into today,
+  // which only a multi-day job can do, so those few are worked out exactly (weekends and all) here.
+  const [startingLater, running, noClient, clientRows] = await env.DB.batch([
+    env.DB.prepare(`SELECT a.client_id AS client_id, COUNT(*) AS n FROM appointments a
+        WHERE ((a.scheduled_date >= ?) OR (+a.scheduled_date IS NULL AND a.due_date >= ?))${who} GROUP BY +a.client_id`).bind(today, today, ...whoParams),
+    env.DB.prepare(`SELECT a.client_id, a.scheduled_date, a.due_date, a.days FROM appointments a
+        WHERE a.days > 1 AND ((a.scheduled_date >= ? AND a.scheduled_date < ?) OR (+a.scheduled_date IS NULL AND a.due_date >= ? AND a.due_date < ?))${who}`).bind(lo, today, lo, today, ...whoParams),
+    env.DB.prepare(`SELECT 1 AS found FROM appointments a WHERE a.client_id IS NULL AND COALESCE(a.scheduled_date, a.due_date) IS NOT NULL${who} LIMIT 1`).bind(...whoParams),
+    env.DB.prepare("SELECT id, name FROM clients ORDER BY name"),
+  ]);
+  const upcoming = new Map();
+  const add = (id, n) => upcoming.set(id, (upcoming.get(id) || 0) + n);
+  for (const r of startingLater.results) add(r.client_id, r.n);
+  for (const r of running.results) {
+    const dates = itemDates(r.scheduled_date || r.due_date, r.days, skipWeekends);
+    if (dates.length && dates[dates.length - 1] >= today) add(r.client_id, 1);
+  }
+  return json({
+    clients: clientRows.results.map(c => ({ id: c.id, name: c.name, upcoming: upcoming.get(c.id) || 0 })),
+    no_client: noClient.results.length ? { upcoming: upcoming.get(null) || 0 } : null,
+  });
 }
 
 // ---- report data: the jobs, people and logged times behind the Reports page ----
@@ -836,14 +926,14 @@ async function handleReportData(request, env, user) {
     const lo = addDaysIso(start, -120), hi = addDaysIso(end, 120);
     const who = personId ? [personId] : [];
     const entryStmts = statementsForIds(env, ids,
-      `SELECT te.appointment_id, te.user_id, te.work_date, te.start_time, te.end_time, te.minutes FROM time_entries te
-        WHERE te.appointment_id IN ({IDS}) AND te.work_date BETWEEN ? AND ?${personId ? " AND te.user_id = ?" : ""} ORDER BY te.work_date, te.id`,
-      `SELECT te.appointment_id, te.user_id, te.work_date, te.start_time, te.end_time, te.minutes FROM time_entries te
-        WHERE te.work_date BETWEEN ? AND ?${personId ? " AND te.user_id = ?" : ""} ORDER BY te.work_date, te.id`,
+      `SELECT te.id, te.appointment_id, te.user_id, te.work_date, te.start_time, te.end_time, te.minutes FROM time_entries te
+        WHERE te.appointment_id IN ({IDS}) AND te.work_date BETWEEN ? AND ?${personId ? " AND te.user_id = ?" : ""}`,
+      `SELECT te.id, te.appointment_id, te.user_id, te.work_date, te.start_time, te.end_time, te.minutes FROM time_entries te
+        WHERE te.work_date BETWEEN ? AND ?${personId ? " AND te.user_id = ?" : ""}`,
       [lo, hi, ...who]);
     const peopleStmts = statementsForIds(env, ids,
-      `SELECT ip.appointment_id, ip.user_id FROM item_people ip WHERE ip.appointment_id IN ({IDS})${seesAll ? "" : " AND ip.user_id = ?"} ORDER BY ip.rowid`,
-      `SELECT ip.appointment_id, ip.user_id FROM item_people ip${seesAll ? "" : " WHERE ip.user_id = ?"} ORDER BY ip.rowid`,
+      `SELECT ip.appointment_id, ip.user_id, ip.rowid AS rid FROM item_people ip WHERE ip.appointment_id IN ({IDS})${seesAll ? "" : " AND ip.user_id = ?"}`,
+      `SELECT ip.appointment_id, ip.user_id, ip.rowid AS rid FROM item_people ip${seesAll ? "" : " WHERE ip.user_id = ?"}`,
       seesAll ? [] : [user.id]);
     const rs = await env.DB.batch([
       env.DB.prepare("SELECT id, name FROM users"),
@@ -853,13 +943,13 @@ async function handleReportData(request, env, user) {
     const usersById = new Map(rs[0].results.map(u => [u.id, u]));
     clientsById = new Map(rs[1].results.map(c => [c.id, c]));
     sitesById = new Map(rs[2].results.map(x => [x.id, x]));
-    for (const e of rs.slice(3, 3 + entryStmts.length).flatMap(x => x.results)) {
+    for (const e of rs.slice(3, 3 + entryStmts.length).flatMap(x => x.results).sort(byDayThenId)) {
       const u = usersById.get(e.user_id);
       if (u) (entriesByItem[e.appointment_id] ||= []).push({
         user_id: e.user_id, user_name: u.name, work_date: e.work_date, start_time: e.start_time, end_time: e.end_time, minutes: e.minutes,
       });
     }
-    for (const r of rs.slice(3 + entryStmts.length).flatMap(x => x.results)) {
+    for (const r of rs.slice(3 + entryStmts.length).flatMap(x => x.results).sort(byRowId)) {
       const u = usersById.get(r.user_id);
       if (u) (peopleByItem[r.appointment_id] ||= []).push({ id: u.id, name: u.name });
     }
@@ -1234,6 +1324,7 @@ export default {
       }
 
       if (path === "/api/report-data" && method === "GET") return handleReportData(request, env, user);
+      if (path === "/api/client-summary" && method === "GET") return handleClientSummary(request, env, user);
       if (path === "/api/appointments" && method === "GET") return handleListAppointments(request, env, user);
       if (path === "/api/appointments" && method === "POST") return handleCreateAppointment(request, env, user);
       if (path === "/api/appointments/recurring" && method === "POST") return handleCreateRecurring(request, env, user);
