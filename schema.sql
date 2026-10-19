@@ -69,6 +69,10 @@ CREATE TABLE IF NOT EXISTS appointments (
 );
 
 CREATE INDEX IF NOT EXISTS idx_appt_date ON appointments(scheduled_date);
+-- Tasks have a due date instead of a scheduled date. This lets the calendar and the reports find a date range without reading every job.
+CREATE INDEX IF NOT EXISTS idx_appt_due ON appointments(due_date);
+-- Lets the calendar find the longest job with one row read, so it knows how far back a date range has to look.
+CREATE INDEX IF NOT EXISTS idx_appt_days ON appointments(days);
 CREATE INDEX IF NOT EXISTS idx_appt_client ON appointments(client_id);
 CREATE INDEX IF NOT EXISTS idx_appt_series ON appointments(series_id);
 
